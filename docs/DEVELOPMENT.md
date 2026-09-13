@@ -1,8 +1,8 @@
-# 工程规范与扩展方式
+# 开发规范
 
-## 1. 当前交付边界
+## 1. 工程边界
 
-本轮只交付工程基础、开发认证、角色与社区范围验证、前端页面框架。数据库仅创建 `community` 和 `user_account`。其余业务模块用 `package-info.java` 说明职责，尚无业务 Controller 或模拟成功接口。
+当前实现包括工程基础、开发认证、角色与社区范围验证、前端页面框架。数据库仅创建 `community` 和 `user_account`。其余业务模块用 `package-info.java` 说明职责，尚无业务 Controller 或模拟成功接口。
 
 工程标识：`elderly-care-service-platform`；Java 根包：`com.elderlycare.platform`。用户界面采用“社区养老服务平台”，不使用尚未确认的品牌名。
 
@@ -42,7 +42,7 @@
 
 分页请求使用 `@Valid PageQuery`，从第 1 页开始，默认 20、最大 100，返回 `PageResponse<T>`。校验必须位于入口，不能只依赖客户端。
 
-Flyway 迁移位于 `backend/src/main/resources/db/migration/`；已发布迁移禁止直接修改，新增 `V2__...sql`。H2 用于本地开发与快速集成测试，MySQL 语义必须在真实 MySQL 验证。
+Flyway 迁移位于 `backend/src/main/resources/db/migration/`；已发布迁移禁止直接修改，新增下一个未使用版本号的迁移。H2 用于本地开发与快速集成测试，MySQL 语义必须在真实 MySQL 验证。
 
 ## 5. 前端规范
 
@@ -69,12 +69,12 @@ docker compose up -d
 
 后端需要独立设置 `DB_URL`、`DB_USERNAME`、`DB_PASSWORD`、`REDIS_HOST`、`REDIS_PASSWORD`、`RABBITMQ_HOST`、`RABBITMQ_USERNAME`、`RABBITMQ_PASSWORD`。Compose 的 `.env` 不会自动传给 Maven 启动的进程。
 
-Compose 使用固定镜像版本，端口仅映射回环地址，数据通过命名卷保存。Nginx 文件只是路由示例；上线需在受信代理配置 HTTPS，保留 Secure Cookie。当前未实现生产认证，不提供一键公开部署。
+Compose 使用固定镜像版本，端口仅映射回环地址，数据通过命名卷保存。Nginx 文件只是路由示例；上线需在受信代理配置 HTTPS，保留 Secure Cookie。当前未实现生产认证，不支持直接公开部署。
 
-配置中的微信、对象存储和通知字段仅预留命名，不会调用供应商。短信、支付、消息投递和外部数据交换均不在本轮范围。
+配置中的微信、对象存储和通知字段仅预留命名，不会调用供应商。短信、支付、消息投递和外部数据交换尚未实现。
 
 ## 7. 提交检查
 
-提交前执行 README 中的检查命令。后端测试应通过真实过滤器、事务和数据库验证权限边界；无需为简单 getter 编写重复测试。界面变更还要检查真实浏览器，微信专有能力要在开发者工具及真机验证。
+提交前执行[仓库README](../README.md)中的检查命令，并遵循[提交规范](GIT_COMMIT_CONVENTIONS.md)。后端测试应通过真实过滤器、事务和数据库验证权限边界；无需为简单 getter 编写重复测试。界面变更还要检查真实浏览器，微信专有能力要在开发者工具及真机验证。
 
-`.github/workflows/verify.yml` 提供后端构建、管理端 lint/build、小程序类型检查及双端编译。CI 文件已加入，远程运行结果取决于推送后的 GitHub Actions，不以本地通过代替远程执行结果。
+`.github/workflows/verify.yml` 提供后端构建、管理端 lint/build、小程序类型检查及双端编译。检查结果以对应提交的 GitHub Actions 运行记录为准。

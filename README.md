@@ -18,7 +18,7 @@ backend/                Java 21 + Spring Boot，包名 com.elderlycare.platform
 frontend/admin-web/     Vue 3 + TypeScript + Element Plus + Vite
 frontend/mobile/        uni-app + Vue 3 + TypeScript
 infra/                  MySQL、Redis、RabbitMQ 和 Nginx 配置示例
-docs/                   需求、开发规范、接口及验证记录
+docs/                   业务设计、开发规范及接口契约
 ```
 
 ## 本地启动（PowerShell）
@@ -75,10 +75,10 @@ npm run build:mp-weixin
 
 ## 开发文档
 
-- [原始开发说明书](docs/README.md)：长期需求，不代表当前功能均已实现。
-- [工程规范与扩展方式](docs/DEVELOPMENT.md)
+- [开发文档索引](docs/README.md)
+- [开发规范](docs/DEVELOPMENT.md)
+- [Git 提交消息规范](docs/GIT_COMMIT_CONVENTIONS.md)
 - [基础框架接口](docs/FRAMEWORK_API.md)
-- [GitHub 参考项目与版本依据](docs/REFERENCES.md)
-- [本次验证记录](docs/VERIFICATION.md)
+- [依赖与参考资料](docs/REFERENCES.md)
 
 默认配置面向 MySQL、Redis 和 RabbitMQ，必须提供外部环境变量。正式管理员认证、多因素认证和小程序令牌会话尚未接入，因此非 `dev` 环境没有开发密码登录入口。基础框架尚不具备公开上线条件。
