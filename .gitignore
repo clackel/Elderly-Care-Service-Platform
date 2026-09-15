@@ -18,6 +18,7 @@ target/
 .env
 .env.*
 !.env.example
+/backend/config/application-local.yml
 
 # Caches, logs and test reports
 .cache/

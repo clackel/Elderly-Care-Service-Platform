@@ -36,6 +36,29 @@ mvn spring-boot:run '-Dspring-boot.run.profiles=dev'
 
 开发账号：`dev.operator`。首次启动以环境变量中的密码创建账号；后续启动不会覆盖已有密码。开发数据库位于 `backend/.data/`，仅允许合成数据。开发服务只监听 `127.0.0.1`。
 
+**使用本机 MySQL，并保存配置**：
+
+先创建独立测试库 `elderly_care`，连接账号需有该库的建表、修改表、索引及增删改查权限；Flyway 会自动创建表结构。在仓库根目录首次执行：
+
+```powershell
+Copy-Item backend/config/application-local.yml.example backend/config/application-local.yml
+```
+
+编辑 `backend/config/application-local.yml`，填写 MySQL 地址、账号、密码，以及 12～64 位的 `app.dev-password`。以后从仓库根目录执行：
+
+```powershell
+cd backend
+mvn spring-boot:run '-Dspring-boot.run.profiles=dev,local'
+```
+
+必须以 `backend` 为工作目录并按顺序启用 `dev,local`，才能自动加载本机 MySQL 配置，同时保留开发登录、回环监听和进程内会话；不需要 Redis 或 RabbitMQ。只启用 `dev` 会使用 H2 文件数据库，不会读取 `application-local.yml`。实际配置被 Git 忽略，位于源码资源目录之外，不会打包进 JAR。配置密码可重复使用，但修改 `app.dev-password` 不会重置已有账号密码。仅使用合成测试数据；已有加密数据需继续使用原密钥。
+
+IDE 手动调试：主类为 `com.elderlycare.platform.CareApplication`，工作目录设为仓库的 `backend` 目录，Active profiles 设为 `dev,local`（或在 Program arguments 中填写 `--spring.profiles.active=dev,local`）。不需要启动脚本。
+
+启动日志应显示 `dev` 和 `local` 两个环境，以及 Flyway 的 MySQL 连接记录。若显示 `jdbc:h2:file:`，说明实际仍在使用 H2；若 MySQL 连接、权限或迁移失败，应先修复启动错误。Flyway 创建表，不负责创建 MySQL 数据库本身。连接同一个库执行 `SHOW TABLES`，应包含 `community`、`user_account`、`elder_profile`、`elder_profile_event` 和 `flyway_schema_history`。登录校验数据库中的密码哈希，配置密码仅初始化新账号，因此旧账号密码不会随配置文件变更。
+
+如果之前在终端设置过 `SPRING_DATASOURCE_*` 等环境变量，请打开新终端运行，避免高优先级环境变量覆盖文件配置。无需再次复制模板，以免覆盖已填写的参数。
+
 **管理后台**：
 
 ```powershell

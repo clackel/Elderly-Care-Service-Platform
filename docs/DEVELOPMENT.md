@@ -56,6 +56,8 @@ Flyway 迁移位于 `backend/src/main/resources/db/migration/`；已发布迁移
 
 `dev`：H2 文件库、进程内会话、无 Redis/RabbitMQ 连接需求，仅监听回环地址；手动提供 `APP_DEV_PASSWORD`。
 
+本机 MySQL 测试需手动激活 `dev,local`。将 `backend/config/application-local.yml.example` 复制为同目录的 `application-local.yml`，在文件中覆盖数据源 URL、账号、密码及 MySQL 驱动，并提供 `app.dev-password`。以 `backend` 为工作目录，执行 `mvn spring-boot:run '-Dspring-boot.run.profiles=dev,local'`；IDE 调试使用相同工作目录和 Active profiles。Spring Boot 从外部 `config/` 目录加载配置；只启用 dev 不会加载 local 文件。实际文件被 Git 忽略且不进入 JAR。环境变量仍优先于文件，已有数据库必须沿用原加密密钥。此方式保留 dev 认证及进程内会话，仅用于本机合成数据测试；配置登录密码仅初始化新账号，不重置已有账号密码。
+
 默认环境：MySQL、Redis 会话、RabbitMQ 连接配置；开发账号初始化器和开发登录均不启用。默认禁用 Swagger，只公开健康状态。新增必需配置 `ELDER_DATA_KEY` 及密钥管理要求见[老人档案接口](ELDER_API.md#存储与配置)。
 
 本地基础设施配置：
