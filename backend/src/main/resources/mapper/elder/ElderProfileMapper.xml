@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.elderlycare.platform.elder.mapper.ElderProfileMapper">
+  <sql id="scope">
+    community_id = #{communityId}
+    <if test="status != null">AND status = #{status}</if>
+    <if test="keywordHash != null">AND (name_hash = #{keywordHash} OR phone_hash = #{keywordHash})</if>
+  </sql>
+  <select id="find" resultType="com.elderlycare.platform.elder.domain.ElderProfileRow">
+    SELECT * FROM elder_profile WHERE community_id = #{communityId} AND id = #{id}
+  </select>
+  <select id="findRequest" resultType="com.elderlycare.platform.elder.domain.ElderProfileRow">
+    SELECT * FROM elder_profile WHERE community_id = #{communityId} AND request_id = #{requestId}
+  </select>
+  <select id="count" resultType="long">
+    SELECT COUNT(*) FROM elder_profile WHERE <include refid="scope"/>
+  </select>
+  <select id="page" resultType="com.elderlycare.platform.elder.domain.ElderProfileRow">
+    SELECT * FROM elder_profile WHERE <include refid="scope"/>
+    ORDER BY created_at DESC, id DESC LIMIT #{limit} OFFSET #{offset}
+  </select>
+  <insert id="insert">
+    INSERT INTO elder_profile
+    (id,community_id,payload_cipher,name_hash,phone_hash,identity_hash,request_id,request_hash,status,version,created_at,updated_at)
+    VALUES
+    (#{id},#{communityId},#{payloadCipher},#{nameHash},#{phoneHash},#{identityHash},#{requestId},#{requestHash},#{status},#{version},#{createdAt},#{updatedAt})
+  </insert>
+  <update id="update">
+    UPDATE elder_profile SET payload_cipher=#{payloadCipher},name_hash=#{nameHash},phone_hash=#{phoneHash},
+      identity_hash=#{identityHash},version=version+1,updated_at=#{updatedAt}
+    WHERE id=#{id} AND community_id=#{communityId} AND version=#{version} AND status='ACTIVE'
+  </update>
+  <update id="transition">
+    UPDATE elder_profile SET status=#{to},version=version+1,updated_at=#{updatedAt}
+    WHERE id=#{id} AND community_id=#{communityId} AND version=#{version} AND status=#{from}
+  </update>
+</mapper>

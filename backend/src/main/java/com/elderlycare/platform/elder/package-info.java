@@ -1,7 +1,6 @@
 /**
- * 老人档案模块的命名空间。
+ * 社区老人档案：建档、查询、更新、归档恢复及操作历史。
  *
- * <p>当前仅预留模块边界；业务规则、数据表及外部服务尚未实现。
- * 后续按 api、service、mapper、domain 分层，事务置于 Service，跨模块通过 Service 协作。
+ * <p>所有访问受角色与社区边界约束；个人资料加密保存，写操作与审计记录在同一事务提交。
  */
 package com.elderlycare.platform.elder;

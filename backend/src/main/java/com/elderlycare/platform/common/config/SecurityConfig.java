@@ -31,6 +31,7 @@ public class SecurityConfig {
                 auth.requestMatchers("/api/v1/auth/admin/login", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll();
             }
             auth.requestMatchers("/api/v1/system/**").hasAnyRole("COMMUNITY_OPERATOR", "DUTY_OFFICER", "PLATFORM_ADMIN", "AUDITOR");
+            auth.requestMatchers("/api/v1/elders", "/api/v1/elders/**").hasAnyRole("COMMUNITY_OPERATOR", "PLATFORM_ADMIN");
             auth.requestMatchers("/api/v1/**").authenticated();
             auth.anyRequest().denyAll();
         });

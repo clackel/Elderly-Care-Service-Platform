@@ -18,7 +18,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.session.SessionAutoConfiguration",
         "spring.data.redis.password=",
-        "spring.rabbitmq.password="
+        "spring.rabbitmq.password=",
+        "app.elder.encryption-key=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
 })
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
