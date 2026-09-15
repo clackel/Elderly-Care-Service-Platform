@@ -2,7 +2,7 @@
 
 ## 1. 工程边界
 
-当前实现包括工程基础、开发认证、角色与社区范围验证、前端页面框架。数据库仅创建 `community` 和 `user_account`。其余业务模块用 `package-info.java` 说明职责，尚无业务 Controller 或模拟成功接口。
+当前实现包括工程基础、开发认证、角色与社区范围验证、老人档案后端及前端页面框架。数据库包含 `community`、`user_account`、`elder_profile` 和 `elder_profile_event`。其余业务模块尚未实现。
 
 工程标识：`elderly-care-service-platform`；Java 根包：`com.elderlycare.platform`。用户界面采用“社区养老服务平台”，不使用尚未确认的品牌名。
 
@@ -21,7 +21,7 @@
 
 简单 Service 不创建只有一份实现的同名接口；出现可替换实现或稳定跨模块契约时再提取接口。禁止循环依赖、字段注入、拼接用户输入的 SQL 和 Controller 返回持久化实体。
 
-必要注释解释安全约束、状态变化和设计原因，避免逐行重复代码含义。公共契约、事务边界和集成适配器需要说明使用限制。
+新增或修改的功能方法必须编写中文注释，说明职责、参数、返回值及必要的权限、事务和状态约束；纯字段访问器不要求重复注释。主动抛出的异常使用中文消息，错误码保持稳定，异常内容不得包含个人信息、凭据或SQL参数。
 
 ## 3. 认证与数据边界
 
@@ -56,7 +56,7 @@ Flyway 迁移位于 `backend/src/main/resources/db/migration/`；已发布迁移
 
 `dev`：H2 文件库、进程内会话、无 Redis/RabbitMQ 连接需求，仅监听回环地址；手动提供 `APP_DEV_PASSWORD`。
 
-默认环境：MySQL、Redis 会话、RabbitMQ 连接配置；开发账号初始化器和开发登录均不启用。默认禁用 Swagger，只公开健康状态。
+默认环境：MySQL、Redis 会话、RabbitMQ 连接配置；开发账号初始化器和开发登录均不启用。默认禁用 Swagger，只公开健康状态。新增必需配置 `ELDER_DATA_KEY` 及密钥管理要求见[老人档案接口](ELDER_API.md#存储与配置)。
 
 本地基础设施配置：
 

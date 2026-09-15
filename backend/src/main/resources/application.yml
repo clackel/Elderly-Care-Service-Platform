@@ -57,6 +57,8 @@ springdoc:
   swagger-ui:
     enabled: false
 app:
+  elder:
+    encryption-key: ${ELDER_DATA_KEY:}
   integrations:
     wechat-app-id: ${WECHAT_APP_ID:}
     wechat-app-secret: ${WECHAT_APP_SECRET:}
