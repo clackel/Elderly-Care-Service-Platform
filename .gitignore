@@ -2,6 +2,7 @@
 .idea/
 .playwright-cli/
 output/
+.agents/
 
 # Frontend dependencies and build output
 node_modules/
