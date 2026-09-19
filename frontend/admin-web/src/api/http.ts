@@ -1,10 +1,12 @@
 import type { ApiResponse } from './types'
 
 export class ApiError extends Error {
+  /** 保留中文提示、HTTP状态和稳定错误码，供页面区分冲突及可重试故障。 */
   constructor(
     public status: number,
     message: string,
     public traceId?: string,
+    public code?: string,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -27,7 +29,9 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
       ...options,
       headers,
       credentials: 'same-origin',
-      signal: options.signal ?? AbortSignal.timeout(15000),
+      signal: options.signal
+        ? AbortSignal.any([options.signal, AbortSignal.timeout(15000)])
+        : AbortSignal.timeout(15000),
     })
   } catch {
     throw new ApiError(0, '无法连接服务器，请检查网络后重试')
@@ -42,7 +46,7 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
     if (response.status === 401 || response.status === 403) {
       window.dispatchEvent(new CustomEvent('session-invalidated', { detail: response.status }))
     }
-    throw new ApiError(response.status, body.message || '请求失败', body.traceId)
+    throw new ApiError(response.status, body.message || '请求失败', body.traceId, body.code)
   }
   return body.data
 }

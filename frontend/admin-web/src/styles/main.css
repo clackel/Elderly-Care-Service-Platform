@@ -4,6 +4,12 @@
   background: #f5f7f6;
   font-synthesis: none;
   --el-color-primary: #246c5d;
+  --el-color-primary-light-3: #568f80;
+  --el-color-primary-light-5: #85afa2;
+  --el-color-primary-light-7: #bfd6ce;
+  --el-color-primary-light-8: #d7e6e0;
+  --el-color-primary-light-9: #edf4f1;
+  --el-color-primary-dark-2: #1c5649;
   --el-border-radius-base: 8px;
 }
 * {
@@ -336,7 +342,7 @@ h3 {
     margin: auto;
   }
   .admin-shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .sidebar {
     padding: 16px;

@@ -2,7 +2,7 @@
 
 ## 1. 工程边界
 
-当前实现包括工程基础、开发认证、角色与社区范围验证、老人档案后端及前端页面框架。数据库包含 `community`、`user_account`、`elder_profile` 和 `elder_profile_event`。其余业务模块尚未实现。
+当前实现包括工程基础、开发认证、角色与社区范围验证，以及老人档案后端和管理端页面。数据库包含 `community`、`user_account`、`elder_profile` 和 `elder_profile_event`。其余业务模块尚未实现。
 
 工程标识：`elderly-care-service-platform`；Java 根包：`com.elderlycare.platform`。用户界面采用“社区养老服务平台”，不使用尚未确认的品牌名。
 
@@ -50,6 +50,10 @@ Flyway 迁移位于 `backend/src/main/resources/db/migration/`；已发布迁移
 
 会话信息只在 Pinia 内存中保存，页面刷新向服务端恢复。401/403 时清空会话并卸载当前页面，避免保留失效数据。注销请求失败应提示重试，不宣称注销成功。
 
+老人档案路由 `/elders` 由 `EldersView` 装配功能容器，`components/elders` 内拆分筛选、列表、编辑、详情及历史。`useElderRecords` 管理读取取消、草稿生命周期、版本冲突和写入状态；`api/elders.ts` 与后端契约对应。档案不得写入 localStorage、sessionStorage 或 URL；筛选条件和草稿随页面卸载清理。交互约定见[老人档案接口](ELDER_API.md#管理端集成)。
+
+管理端 `npm test` 使用 Node 内置测试运行器及类型擦除执行 TypeScript 用例，不依赖新增测试框架；表单模型测试位于 `tests/elderModel.test.ts`。接口交互与权限仍需通过真实浏览器及后端集成测试验证。
+
 移动端使用官方 uni-app Vite TypeScript 结构，四个 tab 页面共用 `PageFrame` 和求助区域。默认正文 20px、特大字号 26px、按钮最小高度 56px。本地存储只保存字号偏好；健康数据和令牌不得持久化。当前无客户端角色切换和模拟微信登录。
 
 ## 6. 基础设施与环境
@@ -79,4 +83,4 @@ Compose 使用固定镜像版本，端口仅映射回环地址，数据通过命
 
 提交前执行[仓库README](../README.md)中的检查命令，并遵循[提交规范](GIT_COMMIT_CONVENTIONS.md)。后端测试应通过真实过滤器、事务和数据库验证权限边界；无需为简单 getter 编写重复测试。界面变更还要检查真实浏览器，微信专有能力要在开发者工具及真机验证。
 
-`.github/workflows/verify.yml` 提供后端构建、管理端 lint/build、小程序类型检查及双端编译。检查结果以对应提交的 GitHub Actions 运行记录为准。
+`.github/workflows/verify.yml` 提供后端构建及 MySQL 档案集成测试、管理端 lint/格式检查/测试/build、小程序类型检查及双端编译。检查结果以对应提交的 GitHub Actions 运行记录为准。

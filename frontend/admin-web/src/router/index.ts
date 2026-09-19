@@ -19,8 +19,15 @@ export const router = createRouter({
         },
         ...featureModules.map((module) => ({
           path: module.path,
-          component: () => import('../views/ModuleView.vue'),
-          meta: { title: module.title, description: module.description },
+          component:
+            module.path === 'elders'
+              ? () => import('../views/EldersView.vue')
+              : () => import('../views/ModuleView.vue'),
+          meta: {
+            title: module.title,
+            description: module.description,
+            requiresElderAccess: module.path === 'elders',
+          },
         })),
       ],
     },
@@ -28,6 +35,7 @@ export const router = createRouter({
   ],
 })
 
+// 路由守卫提前拒绝不具备档案管理权限的账号；对象与社区权限仍由后端逐请求验证。
 router.beforeEach(async (to) => {
   const session = useSessionStore()
   if (!session.initialized) {
@@ -40,6 +48,7 @@ router.beforeEach(async (to) => {
   if (to.path === '/login') return session.canAccessAdmin ? '/' : true
   if (!session.account) return '/login'
   if (!session.canAccessAdmin && to.path !== '/forbidden') return '/forbidden'
+  if (to.meta.requiresElderAccess && !session.canManageElders) return '/forbidden'
   return true
 })
 

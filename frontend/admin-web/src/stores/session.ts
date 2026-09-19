@@ -12,7 +12,13 @@ export const useSessionStore = defineStore('session', () => {
   const canAccessAdmin = computed(
     () => account.value !== null && managementRoles.includes(account.value.role),
   )
+  const canManageElders = computed(
+    () =>
+      !!account.value?.communityId &&
+      ['COMMUNITY_OPERATOR', 'PLATFORM_ADMIN'].includes(account.value.role),
+  )
 
+  /** 清除内存会话，权限失效时同步驱动路由和敏感页面卸载。 */
   function clear() {
     account.value = null
     initialized.value = true
@@ -40,5 +46,5 @@ export const useSessionStore = defineStore('session', () => {
     clear()
   }
 
-  return { account, initialized, canAccessAdmin, clear, restore, login, logout }
+  return { account, initialized, canAccessAdmin, canManageElders, clear, restore, login, logout }
 })

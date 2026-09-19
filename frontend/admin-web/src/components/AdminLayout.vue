@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { featureModules } from '../router/modules'
@@ -9,7 +9,11 @@ const route = useRoute()
 const router = useRouter()
 const session = useSessionStore()
 const loggingOut = ref(false)
+const visibleModules = computed(() =>
+  featureModules.filter((module) => module.path !== 'elders' || session.canManageElders),
+)
 
+/** 服务端确认注销后跳转登录页，失败时保留会话并提示重试。 */
 async function logout() {
   loggingOut.value = true
   try {
@@ -34,7 +38,7 @@ async function logout() {
       <nav aria-label="主导航">
         <RouterLink to="/" class="nav-item" exact-active-class="active">工作台</RouterLink>
         <RouterLink
-          v-for="module in featureModules"
+          v-for="module in visibleModules"
           :key="module.path"
           :to="'/' + module.path"
           class="nav-item"
