@@ -1,12 +1,13 @@
 # 基础框架接口
 
-本文记录已实现的基础框架接口。老人档案后端见[老人档案接口](ELDER_API.md)；其他规划业务接口见[业务系统设计](SYSTEM_DESIGN.md#7-接口契约)。
+本文记录已实现的基础框架接口。老人档案见[老人档案接口](ELDER_API.md)，服务预约、微信开通及授权见[预约接口](SERVICE_BOOKING_API.md)；其他规划能力见[业务系统设计](SYSTEM_DESIGN.md#7-接口契约)。
 
 | 方法 | 路径 | 当前行为 |
 |---|---|---|
 | GET | `/api/v1/auth/capabilities` | 公开；返回当前开发登录和微信登录能力标志 |
 | GET | `/api/v1/auth/csrf` | 公开；创建或读取当前会话的 CSRF 凭证 |
 | POST | `/api/v1/auth/admin/login` | 仅 dev；URL 编码的 username/password，需 CSRF 请求头 |
+| POST | `/api/v1/auth/wechat/login` | code 和首次登录 enrollmentToken；向微信核验身份并建立服务器会话，需 CSRF |
 | GET | `/api/v1/auth/me` | 登录后返回账号 ID、显示名、角色及社区 ID |
 | POST | `/api/v1/auth/logout` | 需 CSRF；销毁当前会话并删除 Cookie |
 | GET | `/api/v1/system/community` | 后台角色；查询当前账号所属的有效社区 |
@@ -48,4 +49,4 @@ Swagger 在 dev 环境的 `/swagger-ui/index.html`，OpenAPI JSON 在 `/v3/api-d
 | 404 | NOT_FOUND | 已授权请求的资源不存在 |
 | 500 | INTERNAL_ERROR | 未预期异常，不向客户端暴露内部内容 |
 
-普通错误响应的 `data` 为 null。未授权访问优先按安全过滤器返回 401/403。409/429 等业务状态将在对应功能实现时补充，现有接口尚不使用这些状态。
+普通错误响应的 `data` 为 null。未授权访问优先按安全过滤器返回 401/403。预约及微信入口还会返回 409 状态冲突、429 登录限流、502 微信服务暂不可用、503 微信凭据未配置，详见[预约错误契约](SERVICE_BOOKING_API.md#常见错误)。

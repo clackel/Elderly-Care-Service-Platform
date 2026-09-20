@@ -11,7 +11,11 @@ const community = ref<Community | null>(null)
 const loading = ref(false)
 const errorMessage = ref('')
 const visibleModules = computed(() =>
-  featureModules.filter((module) => module.path !== 'elders' || session.canManageElders),
+  featureModules.filter(
+    (module) =>
+      !['elders', 'services', 'consent', 'bookings', 'fulfillment'].includes(module.path) ||
+      session.canManageElders,
+  ),
 )
 
 async function loadCommunity() {
@@ -68,13 +72,19 @@ onMounted(loadCommunity)
       <h3>{{ module.title }}</h3>
       <p>{{ module.description }}</p>
       <span class="module-status"
-        >{{ module.path === 'elders' ? '进入档案管理' : '页面已预留' }}
+        >{{
+          ['elders', 'services', 'consent', 'bookings', 'fulfillment'].includes(module.path)
+            ? '进入管理'
+            : '页面已预留'
+        }}
         <span aria-hidden="true">→</span></span
       >
     </RouterLink>
   </div>
   <div class="framework-note">
     <strong>当前交付范围</strong>
-    <p>老人档案支持建档、查询、修改、归档恢复与变更记录。其他业务模块将分阶段接入。</p>
+    <p>
+      老人档案与养老服务预约已接入。请先维护提供方、项目和人员，再受理预约；移动账号需核验身份与授权。
+    </p>
   </div>
 </template>

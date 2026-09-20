@@ -1,7 +1,7 @@
 /**
  * 亲属关系与分项授权模块的命名空间。
  *
- * <p>当前仅预留模块边界；业务规则、数据表及外部服务尚未实现。
- * 后续按 api、service、mapper、domain 分层，事务置于 Service，跨模块通过 Service 协作。
+ * <p>已提供本人核验绑定及预约专用家属授权，不授予健康数据访问权限。
+ * 事务、期限和撤销检查在服务层，持久化对象与预约共用 booking.domain/mapper。
  */
 package com.elderlycare.platform.consent;

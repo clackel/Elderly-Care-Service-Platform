@@ -10,7 +10,11 @@ const router = useRouter()
 const session = useSessionStore()
 const loggingOut = ref(false)
 const visibleModules = computed(() =>
-  featureModules.filter((module) => module.path !== 'elders' || session.canManageElders),
+  featureModules.filter(
+    (module) =>
+      !['elders', 'services', 'consent', 'bookings', 'fulfillment'].includes(module.path) ||
+      session.canManageElders,
+  ),
 )
 
 /** 服务端确认注销后跳转登录页，失败时保留会话并提示重试。 */

@@ -25,12 +25,15 @@ public class ElderProfileService {
     private final ElderProfileMapper profiles;
     private final ElderAuditMapper events;
     private final ElderCrypto crypto;
+    private final com.elderlycare.platform.booking.mapper.BookingQueries bookings;
 
-    /** 装配档案持久化、权限、加密和审计组件。 */
+    /** 装配档案持久化、权限、加密和审计组件，并约束存在进行中预约时的归档。 */
     public ElderProfileService(CommunityAccess access, CommunityMapper communities,
-                               ElderProfileMapper profiles, ElderAuditMapper events, ElderCrypto crypto) {
+                               ElderProfileMapper profiles, ElderAuditMapper events, ElderCrypto crypto,
+                               com.elderlycare.platform.booking.mapper.BookingQueries bookings) {
         this.access = access; this.communities = communities;
         this.profiles = profiles; this.events = events; this.crypto = crypto;
+        this.bookings = bookings;
     }
 
     /** 分页查询当前社区档案，按状态或完整姓名、联系电话筛选；列表仅返回脱敏摘要。 */
@@ -107,14 +110,14 @@ public class ElderProfileService {
         return detail(row);
     }
 
-    /** 按预期版本归档当前社区档案，保留资料及操作历史。 */
-    @Transactional
+    /** 按版本归档；读已提交隔离确保等待社区锁后能看到并发提交的未结束预约。 */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public Detail archive(Authentication auth, long id, long version) {
         return transition(auth, id, version, "ACTIVE", "ARCHIVED", "ARCHIVE");
     }
 
-    /** 按预期版本恢复已归档档案。 */
-    @Transactional
+    /** 按版本恢复档案，社区锁后使用最新已提交状态。 */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public Detail restore(Authentication auth, long id, long version) {
         return transition(auth, id, version, "ARCHIVED", "ACTIVE", "RESTORE");
     }
@@ -132,13 +135,19 @@ public class ElderProfileService {
         return new PageResponse<>(items, page.page(), page.pageSize(), total);
     }
 
-    /** 以版本和来源状态执行原子状态更新，失败时返回冲突。 */
+    /** 持有社区锁后核验未结束预约，再以版本和来源状态原子更新，避免归档与预约并发。 */
     private Detail transition(Authentication auth, long id, long version, String from, String to, String action) {
         UserAccount actor = operator(auth);
+        if (communities.lockActiveById(actor.getCommunityId()) == null) {
+            throw new BusinessException(HttpStatus.FORBIDDEN, "COMMUNITY_UNAVAILABLE", "所属社区不可用");
+        }
         var row = require(actor.getCommunityId(), id);
         checkVersion(row, version);
         if (!from.equals(row.getStatus())) {
             throw new BusinessException(HttpStatus.CONFLICT, "INVALID_ELDER_STATE", "档案状态已变化，请刷新后重试");
+        }
+        if ("ARCHIVED".equals(to) && bookings.openForElder(actor.getCommunityId(), id) > 0) {
+            throw new BusinessException(HttpStatus.CONFLICT, "ELDER_HAS_OPEN_BOOKINGS", "老人仍有未结束预约，请先取消、完成或终止预约后归档");
         }
         Instant now = Instant.now();
         if (profiles.transition(actor.getCommunityId(), id, version, from, to, now) != 1) throw stale();

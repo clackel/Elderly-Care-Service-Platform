@@ -19,6 +19,8 @@ function navigate(url: string) {
       <button class="feature-button" @click="navigate('/pages/health/index')">我的健康</button>
       <button class="feature-button" @click="navigate('/pages/profile/index')">我的账号</button>
     </view>
-    <view class="notice-card"><text>当前为基础框架预览，线上服务暂未开通。</text></view>
+    <view class="notice-card"
+      ><text>服务预约提交后需由社区确认。首次使用请联系社区核验身份并开通账号。</text></view
+    >
   </PageFrame>
 </template>

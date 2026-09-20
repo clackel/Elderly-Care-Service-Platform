@@ -15,10 +15,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
     private final CommunityAccess access;
     private final Environment environment;
+    private final com.elderlycare.platform.identity.service.WechatLoginService wechat;
 
-    public AuthController(CommunityAccess access, Environment environment) {
+    /** 装配当前身份及真实微信登录配置能力。 */
+    public AuthController(CommunityAccess access, Environment environment, com.elderlycare.platform.identity.service.WechatLoginService wechat) {
         this.access = access;
         this.environment = environment;
+        this.wechat = wechat;
     }
 
     @GetMapping("/csrf")
@@ -31,9 +34,10 @@ public class AuthController {
         return ApiResponse.ok(AccountDto.from(access.current(authentication)));
     }
 
+    /** 返回实际配置的登录入口能力，不生成模拟认证身份。 */
     @GetMapping("/capabilities")
     public ApiResponse<CapabilitiesDto> capabilities() {
-        return ApiResponse.ok(new CapabilitiesDto(environment.acceptsProfiles(Profiles.of("dev")), false));
+        return ApiResponse.ok(new CapabilitiesDto(environment.acceptsProfiles(Profiles.of("dev")), wechat.enabled()));
     }
 
     public record CsrfDto(String headerName, String token) {}

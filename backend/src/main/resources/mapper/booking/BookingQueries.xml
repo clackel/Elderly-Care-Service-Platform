@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.elderlycare.platform.booking.mapper.BookingQueries">
+  <sql id="elderPermission">
+    <choose>
+      <when test="actor.role == 'COMMUNITY_OPERATOR' or actor.role == 'PLATFORM_ADMIN'">1 = 1</when>
+      <when test="actor.role == 'ELDER'">
+        EXISTS (SELECT 1 FROM elder_account_binding eb WHERE eb.community_id = #{actor.communityId}
+          AND eb.elder_id = e.id AND eb.account_id = #{actor.id} AND eb.active = TRUE)
+      </when>
+      <when test="actor.role == 'FAMILY'">
+        EXISTS (SELECT 1 FROM booking_grant g WHERE g.community_id = #{actor.communityId}
+          AND g.elder_id = e.id AND g.family_id = #{actor.id} AND g.revoked = FALSE AND g.expires_at &gt; #{now}
+          <if test="write">AND g.can_book = TRUE</if>)
+      </when>
+      <otherwise>1 = 0</otherwise>
+    </choose>
+  </sql>
+  <sql id="bookingPermission">
+    b.community_id = #{actor.communityId}
+    <choose>
+      <when test="actor.role == 'COMMUNITY_OPERATOR' or actor.role == 'PLATFORM_ADMIN'"/>
+      <when test="actor.role == 'ELDER'">
+        AND EXISTS (SELECT 1 FROM elder_account_binding eb WHERE eb.community_id = b.community_id
+          AND eb.elder_id = b.elder_id AND eb.account_id = #{actor.id} AND eb.active = TRUE)
+      </when>
+      <when test="actor.role == 'FAMILY'">
+        AND EXISTS (SELECT 1 FROM booking_grant g WHERE g.community_id = b.community_id
+          AND g.elder_id = b.elder_id AND g.family_id = #{actor.id} AND g.revoked = FALSE AND g.expires_at &gt; #{now})
+      </when>
+      <when test="actor.role == 'STAFF'">
+        AND b.worker_id = #{actor.id}
+        AND EXISTS (SELECT 1 FROM service_worker w WHERE w.id = #{actor.id} AND w.community_id = b.community_id AND w.enabled = TRUE)
+      </when>
+      <otherwise>AND 1 = 0</otherwise>
+    </choose>
+  </sql>
+  <sql id="filter">
+    <include refid="bookingPermission"/>
+    <if test="status != null">AND b.status = #{status}</if>
+  </sql>
+  <select id="list" resultType="com.elderlycare.platform.booking.domain.BookingRow">
+    SELECT b.* FROM service_booking b WHERE <include refid="filter"/>
+    ORDER BY b.created_at DESC, b.id DESC LIMIT #{limit} OFFSET #{offset}
+  </select>
+  <select id="count" resultType="long">
+    SELECT COUNT(*) FROM service_booking b WHERE <include refid="filter"/>
+  </select>
+  <select id="visible" resultType="com.elderlycare.platform.booking.domain.BookingRow">
+    SELECT b.* FROM service_booking b WHERE b.id = #{id} AND <include refid="bookingPermission"/>
+  </select>
+  <select id="elders" resultType="com.elderlycare.platform.elder.domain.ElderProfileRow">
+    <bind name="write" value="false"/>
+    SELECT e.* FROM elder_profile e WHERE e.community_id = #{actor.communityId}
+    AND <include refid="elderPermission"/> ORDER BY e.id DESC LIMIT #{limit} OFFSET #{offset}
+  </select>
+  <select id="elderAccess" resultType="long">
+    SELECT COUNT(*) FROM elder_profile e WHERE e.community_id = #{actor.communityId} AND e.id = #{elderId}
+    AND <include refid="elderPermission"/>
+  </select>
+  <select id="conflicts" resultType="long">
+    SELECT COUNT(*) FROM service_booking WHERE community_id = #{community} AND worker_id = #{worker}
+      AND id != #{except} AND status IN ('CONFIRMED','IN_PROGRESS')
+      AND scheduled_start &lt; #{end} AND scheduled_end &gt; #{start}
+  </select>
+  <select id="openForElder" resultType="long">
+    SELECT COUNT(*) FROM service_booking WHERE community_id = #{community} AND elder_id = #{elderId}
+      AND status IN ('PENDING','CONFIRMED','IN_PROGRESS')
+  </select>
+  <select id="openForWorker" resultType="long">
+    SELECT COUNT(*) FROM service_booking WHERE community_id = #{community} AND worker_id = #{workerId}
+      AND status IN ('CONFIRMED','IN_PROGRESS')
+  </select>
+</mapper>
+

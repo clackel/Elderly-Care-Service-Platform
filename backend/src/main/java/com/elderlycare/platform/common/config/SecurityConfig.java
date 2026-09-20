@@ -20,13 +20,14 @@ public class SecurityConfig {
     @Bean
     PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
 
+    /** 保留会话及CSRF防护，微信凭证入口公开但业务接口均需真实身份。 */
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper json,
             IdentityService identities, Environment environment) throws Exception {
         boolean dev = environment.acceptsProfiles(Profiles.of("dev"));
         http.authorizeHttpRequests(auth -> {
             auth.requestMatchers("/actuator/health", "/actuator/health/**", "/api/v1/auth/csrf",
-                    "/api/v1/auth/capabilities").permitAll();
+                    "/api/v1/auth/capabilities", "/api/v1/auth/wechat/login").permitAll();
             if (dev) {
                 auth.requestMatchers("/api/v1/auth/admin/login", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll();
             }

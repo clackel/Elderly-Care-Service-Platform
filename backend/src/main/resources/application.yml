@@ -57,6 +57,10 @@ springdoc:
   swagger-ui:
     enabled: false
 app:
+  booking:
+    advance-minutes: ${BOOKING_ADVANCE_MINUTES:60}
+    horizon-days: ${BOOKING_HORIZON_DAYS:30}
+    cancel-before-minutes: ${BOOKING_CANCEL_BEFORE_MINUTES:120}
   elder:
     encryption-key: ${ELDER_DATA_KEY:}
   integrations:

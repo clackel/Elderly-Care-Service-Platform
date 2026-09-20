@@ -2,7 +2,7 @@
 
 ## 1. 工程边界
 
-当前实现包括工程基础、开发认证、角色与社区范围验证，以及老人档案后端和管理端页面。数据库包含 `community`、`user_account`、`elder_profile` 和 `elder_profile_event`。其余业务模块尚未实现。
+当前实现包括工程基础、开发认证、角色与社区验证、老人档案，以及服务目录、预约与人工安排、履约、本人绑定、预约专用家属授权和微信登录入口。数据库结构以 V1—V3 Flyway 迁移及[预约接口](SERVICE_BOOKING_API.md)为准；健康、求助投递等仍为规划能力。
 
 工程标识：`elderly-care-service-platform`；Java 根包：`com.elderlycare.platform`。用户界面采用“社区养老服务平台”，不使用尚未确认的品牌名。
 
@@ -52,7 +52,7 @@ Flyway 迁移位于 `backend/src/main/resources/db/migration/`；已发布迁移
 
 老人档案路由 `/elders` 由 `EldersView` 装配功能容器，`components/elders` 内拆分筛选、列表、编辑、详情及历史。`useElderRecords` 管理读取取消、草稿生命周期、版本冲突和写入状态；`api/elders.ts` 与后端契约对应。档案不得写入 localStorage、sessionStorage 或 URL；筛选条件和草稿随页面卸载清理。交互约定见[老人档案接口](ELDER_API.md#管理端集成)。
 
-管理端 `npm test` 使用 Node 内置测试运行器及类型擦除执行 TypeScript 用例，不依赖新增测试框架；表单模型测试位于 `tests/elderModel.test.ts`。接口交互与权限仍需通过真实浏览器及后端集成测试验证。
+管理端 `npm test` 使用 Node 内置测试运行器及类型擦除执行 TypeScript 用例，不依赖新增测试框架；表单模型测试位于 `tests/elderModel.test.ts`。接口交互与权限由后端集成测试覆盖（AI 不新增集成测试）；界面表现和实际操作体验由人工在真实浏览器验收。
 
 移动端使用官方 uni-app Vite TypeScript 结构，四个 tab 页面共用 `PageFrame` 和求助区域。默认正文 20px、特大字号 26px、按钮最小高度 56px。本地存储只保存字号偏好；健康数据和令牌不得持久化。当前无客户端角色切换和模拟微信登录。
 
@@ -77,10 +77,14 @@ docker compose up -d
 
 Compose 使用固定镜像版本，端口仅映射回环地址，数据通过命名卷保存。Nginx 文件只是路由示例；上线需在受信代理配置 HTTPS，保留 Secure Cookie。当前未实现生产认证，不支持直接公开部署。
 
-配置中的微信、对象存储和通知字段仅预留命名，不会调用供应商。短信、消息投递和外部数据交换尚未实现。
+微信 AppID/AppSecret 用于真实小程序身份交换；缺少配置时关闭登录能力。小程序复用服务器会话及 CSRF，Cookie 只保存在运行内存。对象存储和通知字段仍为预留，短信和消息投递尚未实现。预约规则、开通码及部署要求见[预约接口](SERVICE_BOOKING_API.md)。
 
 ## 7. 提交检查
 
-提交前执行[仓库README](../README.md)中的检查命令，并遵循[提交规范](GIT_COMMIT_CONVENTIONS.md)。后端测试应通过真实过滤器、事务和数据库验证权限边界；无需为简单 getter 编写重复测试。界面变更还要检查真实浏览器，微信专有能力要在开发者工具及真机验证。
+AI 交付前只做最小验证：为本次改动补充并运行相关的最小单元测试，并执行一次编译或构建校验，确认改动可编译；不执行完整 `mvn -B -ntp verify`，不执行 lint、格式检查和双端完整构建，也不新增集成测试和端到端测试。完整检查命令仍列在[仓库README](../README.md)，由人工按需执行。提交消息遵循[提交规范](GIT_COMMIT_CONVENTIONS.md)。
 
-`.github/workflows/verify.yml` 提供后端构建及 MySQL 档案集成测试、管理端 lint/格式检查/测试/build、小程序类型检查及双端编译。检查结果以对应提交的 GitHub Actions 运行记录为准。
+AI 不承担验收职责，验收仅在用户明确要求时进行，其余情况由人工自行安排。浏览器页面检查、微信开发者工具及真机验证、端到端验收、性能压测和部署演练由人工执行；数据库变更的 MySQL 兼容性及并发行为由人工在专用测试库验证，H2 结果不作为 MySQL 结论。交付说明只陈述实际执行过的命令与结果，不以自动化检查通过代替验收结论。
+
+`.github/workflows/verify.yml` 提供后端构建及 MySQL 档案集成测试、管理端 lint/格式检查/测试/build、小程序类型检查及双端编译。CI 结果与验收结论由人工确认。
+
+AI 生成的开发文档不包含验收章节、验收用例和人工验证清单，除非用户明确要求。

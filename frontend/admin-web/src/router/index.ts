@@ -22,11 +22,23 @@ export const router = createRouter({
           component:
             module.path === 'elders'
               ? () => import('../views/EldersView.vue')
-              : () => import('../views/ModuleView.vue'),
+              : module.path === 'services'
+                ? () => import('../views/ServicesView.vue')
+                : module.path === 'consent'
+                  ? () => import('../views/BookingAccessView.vue')
+                  : module.path === 'bookings' || module.path === 'fulfillment'
+                    ? () => import('../views/BookingsView.vue')
+                    : () => import('../views/ModuleView.vue'),
           meta: {
             title: module.title,
             description: module.description,
-            requiresElderAccess: module.path === 'elders',
+            requiresElderAccess: [
+              'elders',
+              'services',
+              'consent',
+              'bookings',
+              'fulfillment',
+            ].includes(module.path),
           },
         })),
       ],

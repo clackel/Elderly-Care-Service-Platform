@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { onLaunch } from '@dcloudio/uni-app'
-
+import { useSessionStore } from './stores/session'
+/** 启动时仅恢复已有真实会话；失败不保留任何模拟身份或个人资料。 */
 onLaunch(() => {
-  // 启动时不读取健康数据；身份恢复将在正式微信认证接入后实现。
+  void useSessionStore()
+    .restore()
+    .catch(() => {})
 })
 </script>
-
 <style>
 @import './styles/main.css';
 </style>
