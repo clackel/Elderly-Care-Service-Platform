@@ -7,9 +7,9 @@
       }
     },
     {
-      "path": "pages/booking/index",
+      "path": "pages/services/index",
       "style": {
-        "navigationBarTitleText": "预约服务"
+        "navigationBarTitleText": "服务目录"
       }
     },
     {
@@ -43,8 +43,8 @@
         "text": "首页"
       },
       {
-        "pagePath": "pages/booking/index",
-        "text": "预约"
+        "pagePath": "pages/services/index",
+        "text": "服务"
       },
       {
         "pagePath": "pages/health/index",
