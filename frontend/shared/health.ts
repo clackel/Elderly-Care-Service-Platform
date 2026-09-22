@@ -24,6 +24,10 @@ export interface HealthGrantInput { elderId: string; recipientId: string; scope:
 export interface HealthMutation { id: string; version: number }
 export interface HealthDraft { type: HealthType; date: string; time: string; systolic: string; diastolic: string; heartRate: string; weight: string; glucose: string; glucoseScene: GlucoseScene }
 export const units: Record<HealthType, string> = { BLOOD_PRESSURE: 'mmHg', HEART_RATE: '次/分钟', WEIGHT: 'kg', BLOOD_GLUCOSE: 'mmol/L' }
+/** 管理端健康入口仅限有社区的运营角色，实际老人范围仍由服务端授权决定。 */
+export function canAssistHealth(role?: string, communityId?: string | null): boolean {
+  return role === 'COMMUNITY_OPERATOR' && !!communityId
+}
 export const consentText: Record<HealthScope, string> = {
   FAMILY_READ: '我同意该家属查看我的全部当前有效健康记录及趋势，包括本次授权之前的历史记录。不包含更正前旧值和作废记录。',
   COMMUNITY_ASSIST: '我同意该社区人员新增、查看、更正及作废其自己原始代录且尚未由我接管的记录。不授予完整健康档案、趋势或历史旧值访问权。我更正或作废后，该人员将不能再读取这条记录。',
@@ -94,4 +98,3 @@ export function healthEpoch() {
 export function healthWriteSnapshot(path: string, data: object) {
   return { path, data: JSON.parse(JSON.stringify({ ...data, requestId: healthRequestId() })) as object }
 }
-

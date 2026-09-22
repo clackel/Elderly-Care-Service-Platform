@@ -1,6 +1,6 @@
 export const featureModules = [
   { path: 'elders', title: '老人档案', description: '老人基础资料与社区归属。' },
-  { path: 'health', title: '健康记录', description: '健康记录及授权范围。' },
+  { path: 'health', title: '健康协助录入', description: '获授权老人及本人代录记录的维护。' },
   {
     path: 'consent',
     title: '账号与预约授权',

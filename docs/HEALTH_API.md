@@ -87,6 +87,12 @@ V4 新增 health_record、health_record_revision、health_grant、health_event�
 
 页面仅装配 HealthWorkspace；HealthRecordForm、HealthRecordList、HealthRecordDetail、HealthTrend、HealthGrantPanel 通过 props 与事件交互，useHealthRecords 维护读取世代、权限失效清理、版本冲突和写请求快照。表单不直接请求接口。未知提交结果锁定草稿并提供原请求重试；409 后需关闭表单并重新读取，不自动覆盖新版本。离开标签、进入后台或会话失效时卸载健康内容；返回前台先恢复真实身份再查询授权。
 
+## 社区管理端
+
+`/health` 为“健康协助录入”，路由和菜单只对具有社区归属的 COMMUNITY_OPERATOR 显示。页面展示本账号编号，供受权人主动交给老人核对；老人目录只来自健康授权接口。可新增、更正、作废、分页查询本人原始代录且未接管的记录，查看收到的授权及主动放弃，不提供代授权、全档案、趋势或历史旧值入口。
+
+HealthView 负责前台身份重新核验与内容卸载，HealthWorkspace 装配表单、列表、详情和收到的授权。管理端沿用现有请求及 CSRF 封装，与移动端共享纯 TypeScript 契约和字段规则。后台隐藏或页面卸载时清空内容，返回前台重新获取身份与实际授权范围。
+
 ## 错误
 
 | HTTP | code | 含义 |

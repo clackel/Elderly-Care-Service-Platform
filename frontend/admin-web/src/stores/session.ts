@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { authApi } from '../api/auth'
 import { ApiError } from '../api/http'
 import type { CurrentAccount } from '../api/types'
+import { canAssistHealth as healthEntry } from '../../../shared/health'
 
 const managementRoles = ['COMMUNITY_OPERATOR', 'DUTY_OFFICER', 'PLATFORM_ADMIN', 'AUDITOR']
 
@@ -17,6 +18,7 @@ export const useSessionStore = defineStore('session', () => {
       !!account.value?.communityId &&
       ['COMMUNITY_OPERATOR', 'PLATFORM_ADMIN'].includes(account.value.role),
   )
+  const canAssistHealth = computed(() => healthEntry(account.value?.role, account.value?.communityId))
 
   /** 清除内存会话，权限失效时同步驱动路由和敏感页面卸载。 */
   function clear() {
@@ -46,5 +48,5 @@ export const useSessionStore = defineStore('session', () => {
     clear()
   }
 
-  return { account, initialized, canAccessAdmin, canManageElders, clear, restore, login, logout }
+  return { account, initialized, canAccessAdmin, canManageElders, canAssistHealth, clear, restore, login, logout }
 })

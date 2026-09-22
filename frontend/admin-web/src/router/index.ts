@@ -20,7 +20,9 @@ export const router = createRouter({
         ...featureModules.map((module) => ({
           path: module.path,
           component:
-            module.path === 'elders'
+            module.path === 'health'
+              ? () => import('../views/HealthView.vue')
+              : module.path === 'elders'
               ? () => import('../views/EldersView.vue')
               : module.path === 'services'
                 ? () => import('../views/ServicesView.vue')
@@ -32,6 +34,7 @@ export const router = createRouter({
           meta: {
             title: module.title,
             description: module.description,
+            requiresHealthAssist: module.path === 'health',
             requiresElderAccess: [
               'elders',
               'services',
@@ -47,7 +50,7 @@ export const router = createRouter({
   ],
 })
 
-// 路由守卫提前拒绝不具备档案管理权限的账号；对象与社区权限仍由后端逐请求验证。
+// 路由守卫分别检查档案管理和健康协助入口；具体对象及独立授权仍由后端逐请求核验。
 router.beforeEach(async (to) => {
   const session = useSessionStore()
   if (!session.initialized) {
@@ -61,6 +64,7 @@ router.beforeEach(async (to) => {
   if (!session.account) return '/login'
   if (!session.canAccessAdmin && to.path !== '/forbidden') return '/forbidden'
   if (to.meta.requiresElderAccess && !session.canManageElders) return '/forbidden'
+  if (to.meta.requiresHealthAssist && !session.canAssistHealth) return '/forbidden'
   return true
 })
 
