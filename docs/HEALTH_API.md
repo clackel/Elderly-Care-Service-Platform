@@ -81,6 +81,12 @@ V4 新增 health_record、health_record_revision、health_grant、health_event�
 
 健康正文不进入日志、本地存储或URL。注销、切换老人、页面退出与权限失效时清空内存，页面返回前台重新请求身份和授权。已返回终端的信息不能远程收回。
 
+## 移动端
+
+“健康”标签供 ELDER 与 FAMILY 进入。本人可手工新增、更正、作废、分页查看历史旧值及独立授权；家属仅查看当前有效记录和原始点趋势，并可放弃收到的授权。趋势提供7、30、90天，图形同时附带测量时间、来源、单位及可分页阅读的数值，血糖按场景选择。
+
+页面仅装配 HealthWorkspace；HealthRecordForm、HealthRecordList、HealthRecordDetail、HealthTrend、HealthGrantPanel 通过 props 与事件交互，useHealthRecords 维护读取世代、权限失效清理、版本冲突和写请求快照。表单不直接请求接口。未知提交结果锁定草稿并提供原请求重试；409 后需关闭表单并重新读取，不自动覆盖新版本。离开标签、进入后台或会话失效时卸载健康内容；返回前台先恢复真实身份再查询授权。
+
 ## 错误
 
 | HTTP | code | 含义 |
@@ -93,4 +99,3 @@ V4 新增 health_record、health_record_revision、health_grant、health_event�
 | 409 | IDEMPOTENCY_CONFLICT | 请求编号已用于其他内容 |
 | 409 | HEALTH_TYPE_IMMUTABLE / HEALTH_RECORD_VOID / ELDER_ARCHIVED | 按当前状态处理 |
 | 429 | HEALTH_RESOLVE_RATE_LIMITED | 一分钟后再核对账号 |
-
