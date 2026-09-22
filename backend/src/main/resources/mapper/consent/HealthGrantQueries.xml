@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.elderlycare.platform.consent.mapper.HealthGrantQueries">
+  <sql id="visible">
+    g.community_id = #{actor.communityId}
+    <choose>
+      <when test="actor.role == 'ELDER'">
+        AND EXISTS (SELECT 1 FROM elder_account_binding eb JOIN user_account owner ON owner.id = eb.account_id
+          JOIN elder_profile e ON e.id = eb.elder_id
+          WHERE <include refid="com.elderlycare.platform.health.mapper.HealthQueries.validBinding"/>
+            AND e.id = g.elder_id AND e.community_id = g.community_id AND eb.account_id = #{actor.id})
+      </when>
+      <when test="actor.role == 'FAMILY'">AND g.recipient_id = #{actor.id} AND g.scope = 'FAMILY_READ'</when>
+      <when test="actor.role == 'COMMUNITY_OPERATOR'">AND g.recipient_id = #{actor.id} AND g.scope = 'COMMUNITY_ASSIST'</when>
+      <otherwise>AND 1 = 0</otherwise>
+    </choose>
+  </sql>
+  <select id="list" resultType="com.elderlycare.platform.consent.domain.HealthGrantRow">
+    SELECT g.* FROM health_grant g WHERE <include refid="visible"/> ORDER BY g.id DESC LIMIT #{limit} OFFSET #{offset}
+  </select>
+  <select id="count" resultType="long">
+    SELECT COUNT(*) FROM health_grant g WHERE <include refid="visible"/>
+  </select>
+  <select id="visible" resultType="com.elderlycare.platform.consent.domain.HealthGrantRow">
+    SELECT g.* FROM health_grant g WHERE g.id = #{id} AND <include refid="visible"/>
+  </select>
+  <select id="effective" resultType="long">
+    SELECT COUNT(*) FROM health_grant g JOIN elder_profile e ON e.id = g.elder_id
+      JOIN elder_account_binding eb ON eb.id = g.binding_id JOIN user_account owner ON owner.id = eb.account_id
+      JOIN user_account recipient ON recipient.id = g.recipient_id
+    WHERE g.id = #{id} AND <include refid="com.elderlycare.platform.health.mapper.HealthQueries.validGrant"/>
+  </select>
+  <update id="supersede">
+    UPDATE health_grant SET revoked = TRUE, revoked_at = #{now}, revoked_by = #{actorId}, version = version + 1
+    WHERE community_id = #{community} AND elder_id = #{elderId} AND recipient_id = #{recipientId}
+      AND scope = #{scope} AND revoked = FALSE
+  </update>
+  <update id="revokeForArchive">
+    UPDATE health_grant SET revoked = TRUE, revoked_at = #{now}, revoked_by = #{actorId}, version = version + 1
+    WHERE community_id = #{community} AND elder_id = #{elderId} AND revoked = FALSE
+  </update>
+</mapper>

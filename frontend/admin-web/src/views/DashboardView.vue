@@ -13,8 +13,10 @@ const errorMessage = ref('')
 const visibleModules = computed(() =>
   featureModules.filter(
     (module) =>
-      !['elders', 'services', 'consent', 'bookings', 'fulfillment'].includes(module.path) ||
-      session.canManageElders,
+      module.path === 'health'
+        ? session.canAssistHealth
+        : !['elders', 'services', 'consent', 'bookings', 'fulfillment'].includes(module.path) ||
+          session.canManageElders,
   ),
 )
 
@@ -73,7 +75,7 @@ onMounted(loadCommunity)
       <p>{{ module.description }}</p>
       <span class="module-status"
         >{{
-          ['elders', 'services', 'consent', 'bookings', 'fulfillment'].includes(module.path)
+          ['elders', 'health', 'services', 'consent', 'bookings', 'fulfillment'].includes(module.path)
             ? '进入管理'
             : '页面已预留'
         }}
@@ -84,7 +86,7 @@ onMounted(loadCommunity)
   <div class="framework-note">
     <strong>当前交付范围</strong>
     <p>
-      老人档案与养老服务预约已接入。请先维护提供方、项目和人员，再受理预约；移动账号需核验身份与授权。
+      老人档案、养老服务预约与健康协助录入已接入。健康代录需老人本人独立授权；移动账号需先核验身份与绑定。
     </p>
   </div>
 </template>

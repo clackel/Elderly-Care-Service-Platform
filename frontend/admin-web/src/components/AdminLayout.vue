@@ -12,8 +12,10 @@ const loggingOut = ref(false)
 const visibleModules = computed(() =>
   featureModules.filter(
     (module) =>
-      !['elders', 'services', 'consent', 'bookings', 'fulfillment'].includes(module.path) ||
-      session.canManageElders,
+      module.path === 'health'
+        ? session.canAssistHealth
+        : !['elders', 'services', 'consent', 'bookings', 'fulfillment'].includes(module.path) ||
+          session.canManageElders,
   ),
 )
 

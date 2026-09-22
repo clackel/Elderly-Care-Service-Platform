@@ -1,0 +1,10 @@
+.health-panel { background: #fff; padding: 24px; margin: 20px 0; border: 1px solid #dce4e0; border-radius: 12px; }
+.health-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
+.health-fields { border: none; padding: 0; margin: 16px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+.health-fields label { display: flex; flex-direction: column; gap: 8px; line-height: 1.6; }
+.health-fields input:not([type="checkbox"]), .health-fields select, .health-fields textarea { padding: 10px 12px; border: 1px solid #bbc9c2; border-radius: 6px; color: inherit; font: inherit; min-width: 0; }
+.health-scroll { overflow-x: auto; }
+.health-table { width: 100%; border-collapse: collapse; text-align: left; }
+.health-table th, .health-table td { padding: 14px; border-bottom: 1px solid #e0e8e3; line-height: 1.6; }
+.health-grant { border-top: 1px solid #e0e8e3; padding: 12px 0; }
+

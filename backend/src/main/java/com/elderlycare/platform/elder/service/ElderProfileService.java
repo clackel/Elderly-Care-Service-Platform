@@ -26,14 +26,17 @@ public class ElderProfileService {
     private final ElderAuditMapper events;
     private final ElderCrypto crypto;
     private final com.elderlycare.platform.booking.mapper.BookingQueries bookings;
+    private final com.elderlycare.platform.consent.mapper.HealthGrantQueries healthGrants;
 
-    /** 装配档案持久化、权限、加密和审计组件，并约束存在进行中预约时的归档。 */
+    /** 装配档案组件，归档同时约束进行中预约并撤销独立健康授权。 */
     public ElderProfileService(CommunityAccess access, CommunityMapper communities,
                                ElderProfileMapper profiles, ElderAuditMapper events, ElderCrypto crypto,
-                               com.elderlycare.platform.booking.mapper.BookingQueries bookings) {
+                               com.elderlycare.platform.booking.mapper.BookingQueries bookings,
+                               com.elderlycare.platform.consent.mapper.HealthGrantQueries healthGrants) {
         this.access = access; this.communities = communities;
         this.profiles = profiles; this.events = events; this.crypto = crypto;
         this.bookings = bookings;
+        this.healthGrants = healthGrants;
     }
 
     /** 分页查询当前社区档案，按状态或完整姓名、联系电话筛选；列表仅返回脱敏摘要。 */
@@ -135,7 +138,7 @@ public class ElderProfileService {
         return new PageResponse<>(items, page.page(), page.pageSize(), total);
     }
 
-    /** 持有社区锁后核验未结束预约，再以版本和来源状态原子更新，避免归档与预约并发。 */
+    /** 持有社区锁后核验预约并撤销健康授权，再更新档案；恢复不复活旧授权。 */
     private Detail transition(Authentication auth, long id, long version, String from, String to, String action) {
         UserAccount actor = operator(auth);
         if (communities.lockActiveById(actor.getCommunityId()) == null) {
@@ -151,6 +154,7 @@ public class ElderProfileService {
         }
         Instant now = Instant.now();
         if (profiles.transition(actor.getCommunityId(), id, version, from, to, now) != 1) throw stale();
+        if ("ARCHIVED".equals(to)) healthGrants.revokeForArchive(actor.getCommunityId(), id, actor.getId(), now);
         row.setStatus(to); row.setVersion(version + 1); row.setUpdatedAt(now);
         audit(actor, row, action, List.of("status"));
         return detail(row);
