@@ -113,6 +113,12 @@ export function useHealthRecords() {
       if (!valid()) return
       pending.value = null; editor.value = null; history.value = []; points.value = []; detail.value = null
       notice.value = '操作已保存。'
+      if (snapshot.path.endsWith('/revoke')) {
+        selected.value = null; rows.value = []; recipient.value = null; elderPage.value = 1; grantPage.value = 1
+        const e = await healthApi.elders(1)
+        if (!valid()) return
+        elders.value = e.items; elderTotal.value = e.total
+      }
       const g = await healthApi.grants(grantPage.value)
       if (!valid()) return
       grants.value = g.items; grantTotal.value = g.total
@@ -155,7 +161,6 @@ export function useHealthRecords() {
   async function revoke(value: HealthGrant) {
     if (locked.value) return
     await submitWrite(healthWriteSnapshot('/health/grants/' + value.id + '/revoke', { version: value.version }))
-    if (!pending.value && !error.value) await initialize()
   }
   /** 授权事实分页独立于老人记录页。 */
   async function moreGrants(next: number) {
@@ -174,4 +179,3 @@ export function useHealthRecords() {
     historyPage, historyTotal, grantPage, grantTotal, type, status, start, end, busy, error, notice, conflict, editor, pending, locked,
     initialize, select, load, open, revisions, trend, edit, close, save, voidRecord, retry, resolve, clearRecipient, grant, revoke, moreGrants, moreElders }
 }
-

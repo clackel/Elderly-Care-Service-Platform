@@ -1,6 +1,6 @@
 # 业务系统设计
 
-状态：总体规划。已实现的老人档案以[老人档案接口](ELDER_API.md)为准；服务目录、人工预约安排、履约、预约授权和微信开通以[预约接口](SERVICE_BOOKING_API.md)为准；认证接口见[基础框架接口](FRAMEWORK_API.md)，工程约束见[开发规范](DEVELOPMENT.md)。本文其余规划不代表当前实现。
+状态：总体设计与后续规划。已实现的老人档案以[老人档案接口](ELDER_API.md)为准；服务目录、人工预约安排、履约、预约授权和微信开通以[预约接口](SERVICE_BOOKING_API.md)为准；四类健康测量及独立健康同意以[健康接口](HEALTH_API.md)为准。认证接口见[基础框架接口](FRAMEWORK_API.md)，工程约束见[开发规范](DEVELOPMENT.md)。本文其余规划不代表当前实现。
 
 ## 1. 业务范围
 
@@ -17,7 +17,7 @@
 | 纳入一期 | 后续扩展 |
 |---|---|
 | 老人端、家属端、服务人员端、管理后台 | 原生App |
-| 手工录入健康记录和附件 | 智能手环、实体呼叫器 |
+| 手工录入四类健康测量 | 医疗附件、智能手环、实体呼叫器 |
 | 求助通知、人工接警、电话兜底 | 经正式合作的急救系统对接 |
 | 分项授权查看 | 更多机构数据互通 |
 
@@ -203,11 +203,13 @@ backend/
 - 管理员启用多因素认证；验证码限制频率、时效和尝试次数。
 - 注销、账号停用和凭证重置使相关会话失效。
 
-### 5.3 健康档案与家属授权
+### 5.3 已实现的健康记录与独立授权
 
-一期支持血压、血糖、心率、过敏史及备注。数据保存测量时间、录入人和来源，自填数据不能标记为医疗机构确认。数值校验用于发现输入错误，不直接输出诊断。
+当前支持血压、心率、体重、血糖手工测量、分页、详情、原始点趋势、更正和作废。版本只追加，不覆盖旧正文。测量时间、来源和原始录入人保留；类型不可更改，输入上限不代表医学正常范围。不包含过敏史、病历、医疗附件、设备、医学判断或预警。
 
-授权范围包括查看健康摘要、查看健康详情及接收求助通知。关系核验与权限授予分别记录；每项授权包含期限和撤销时间。撤销后下一次访问立即拒绝，并清理权限缓存。代办或监护需核验实际依据。
+健康授权与预约授权完全隔离，HealthAccess 仅复用本人绑定事实。有效绑定本人在线同意后可授予 FAMILY_READ（全部当前有效记录及趋势，包含授权前记录）或 COMMUNITY_ASSIST（指定社区人员自己的原始代录记录，且尚未由本人接管）。旧值仅本人可见，社区无全档案或趋势权，平台管理员和 STAFF 无默认健康权限。
+
+第三方授权绑定到本人绑定编号和版本，逐请求读取账号、社区、绑定、期限及撤销状态。绑定恢复不复活旧授权；档案归档在同一社区锁内撤销第三方授权，恢复后需重新同意。老人更正或作废代录记录后，原代录人不能继续读取或覆盖。线下代授权、监护代理及求助通知授权仍为后续规划。
 
 ## 6. 数据库设计
 
@@ -228,7 +230,10 @@ backend/
 | elder_profile | id、user_id、community_id、name_cipher、address_cipher | 社区和用户索引 |
 | family_relation | elder_id、family_user_id、status | 老人与家属组合唯一 |
 | consent_grant | elder_id、grantee_id、scope、expires_at、revoked_at、version | 授权对象和范围索引 |
-| health_record | elder_id、type、value_cipher、unit、measured_at、source | 老人和测量时间索引 |
+| health_record（已实现V4） | elder_id、type、original_actor_id、owner_taken_over、version、status、measured_at、glucose_scene | 老人、测量时间及代录范围索引 |
+| health_record_revision（已实现V4） | record_id、version、payload_cipher、actor_id、action | 记录与版本唯一 |
+| health_grant（已实现V4） | elder_id、recipient_id、scope、binding_id、binding_version、expires_at、revoked | 独立健康同意与实时有效性 |
+| health_event / health_mutation_request（已实现V4） | 访问元数据 / HMAC请求摘要及结果版本 | 不存正文；社区、账号、操作和请求编号唯一 |
 | service_item | name、price_fen、duration、qualification、status | 区域和上下架状态索引 |
 | fulfillment_record | 待设计 | 与履约任务来源一并确定 |
 | emergency_event | elder_id、status、location_source、accepted_by | 状态和创建时间索引 |
@@ -236,7 +241,7 @@ backend/
 | notification_task | event_id、recipient_id、channel、status、retry_count | 事件、接收者和渠道去重 |
 | outbox_event | business_id、type、payload、status | 状态和创建时间索引 |
 
-健康字段根据实际检索需求加密，解密后仅输出获准字段。健康附件需经对象级鉴权，不能凭文件地址绕过权限。
+健康测量及原因按健康域独立派生密钥加密，认证附加数据绑定社区、老人、记录和版本，权限限定查询后再解密。健康附件仍为规划，后续需经对象级鉴权，不能凭文件地址绕过权限。
 
 ## 7. 接口契约
 
@@ -267,16 +272,14 @@ backend/
 
 ### 7.2 规划业务接口
 
+已实现健康域使用独立 `/api/v1/health/**`，完整字段见[健康接口](HEALTH_API.md)。不在受管理角色限制的 `/elders/**` 下复用移动健康权限。
+
 | 方法 | 路径 | 功能及权限 |
 |---|---|---|
 | POST | /auth/wechat/login | 小程序登录，限流 |
 | POST | /auth/logout | 注销当前会话 |
 | GET | /elders/{id} | 本人或获准人员查询档案 |
 | PATCH | /elders/{id} | 获准人员更新档案 |
-| GET | /elders/{id}/health-records | 健康授权范围内查询 |
-| POST | /elders/{id}/health-records | 获准录入者新增健康记录 |
-| POST | /elders/{id}/grants | 核验授权主体后授予权限 |
-| DELETE | /elders/{id}/grants/{grantId} | 撤销授权 |
 | GET | /services | 服务目录 |
 | POST | /emergencies | 快速创建求助 |
 | GET | /emergencies/{id} | 本人、获准家属或处理人员查询 |

@@ -81,6 +81,11 @@ export function useHealthRecords() {
       }
       if (!valid()) return
       pending.value = null; editor.value = null; detail.value = null; notice.value = '操作已保存。'
+      if (snapshot.path.endsWith('/revoke')) {
+        selected.value = null; rows.value = []; elderPage.value = 1; grantPage.value = 1; grants.value = []
+        const [e, g] = await Promise.all([healthApi.elders(1), healthApi.grants(1)])
+        if (valid()) { elders.value = e.items; elderTotal.value = e.total; grants.value = g.items; grantTotal.value = g.total }
+      }
       if (snapshot.path.includes('/records') && selected.value) {
         const [d, list] = await Promise.all([healthApi.detail(result.id), healthApi.records(selected.value.id, page.value, type.value, status.value,
           start.value && end.value ? healthDateRange(start.value, end.value) : undefined)])
@@ -106,7 +111,6 @@ export function useHealthRecords() {
   async function revoke(grant: HealthGrant) {
     if (locked.value) return
     await submitWrite(healthWriteSnapshot('/health/grants/' + grant.id + '/revoke', { version: grant.version }))
-    if (!pending.value && !error.value) await initialize()
   }
   /** 老人选项分页，每次翻页重新读取授权。 */
   async function moreElders(next: number) { if (!locked.value) { elderPage.value = next; await initialize() } }
@@ -124,4 +128,3 @@ export function useHealthRecords() {
   return { elders, selected, rows, detail, grants, page, total, elderPage, elderTotal, grantPage, grantTotal, type, status, start, end,
     busy, error, notice, conflict, editor, pending, locked, initialize, select, load, open, edit, close, save, voidRecord, retry, revoke, moreElders, moreGrants }
 }
-

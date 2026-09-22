@@ -6,6 +6,8 @@ import { healthDraft, toMeasurement, healthDateRange, healthTime, healthEpoch, h
 test('日期范围固定为北京时间且采用左闭右开', () => {
   assert.deepEqual(healthDateRange('2020-01-02', '2020-01-02'), { from: '2020-01-01T16:00:00.000Z', to: '2020-01-02T16:00:00.000Z' })
   assert.equal(healthTime('2020-01-01T16:00:00Z'), '2020-01-02 00:00:00')
+  assert.throws(() => healthDateRange('2020-02-30', '2020-03-01'))
+  assert.throws(() => healthDateRange('2020-01-03', '2020-01-02'))
 })
 /** 当前指标只携带对应数值；禁止通过宽松数字转换吞掉无效精度。 */
 test('测量只提交当前类型且拒绝额外精度', () => {
@@ -41,4 +43,3 @@ test('旧请求不能越过页面清理世代', () => {
   epoch.next()
   assert.equal(epoch.current(old), false)
 })
-

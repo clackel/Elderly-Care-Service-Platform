@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, getCurrentInstance, nextTick, shallowRef, watch } from 'vue'
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, shallowRef, watch } from 'vue'
 import { healthTypes, glucoseScenes, healthTime, measurementText, units, type HealthType, type GlucoseScene, type HealthRecord } from '../../api/health'
 const props = defineProps<{ points: HealthRecord[]; disabled: boolean }>()
 const emit = defineEmits<{ query: [type: HealthType, scene: GlucoseScene, days: number]; reset: [] }>()
@@ -8,16 +8,19 @@ const requested = shallowRef(false), valuePage = shallowRef(1)
 const types = Object.keys(healthTypes) as HealthType[], scenes = Object.keys(glucoseScenes) as GlucoseScene[]
 const values = computed(() => props.points.slice((valuePage.value - 1) * 20, valuePage.value * 20))
 const instance = getCurrentInstance()
+let drawEpoch = 0, alive = true
 /** 修改趋势条件先清空旧序列，避免把不同指标或场景混在一起。 */
 watch([type, scene, days], () => { requested.value = false; emit('reset') })
 /** 按原始测量时间绘制直线及点，不聚合、不插补；血压两条线共用时间点。 */
 async function draw() {
+  const ticket = ++drawEpoch, source = props.points
   valuePage.value = 1
-  if (!props.points.length) return
+  if (!source.length) return
   await nextTick()
+  if (!alive || ticket !== drawEpoch) return
   const ctx = uni.createCanvasContext('health-trend', instance?.proxy)
-  const measurements = props.points.map(p => p.measurement)
-  const sequences = type.value === 'BLOOD_PRESSURE'
+  const measurements = source.map(p => p.measurement)
+  const sequences = measurements[0]!.type === 'BLOOD_PRESSURE'
     ? [measurements.map(m => m.systolic!), measurements.map(m => m.diastolic!)]
     : [measurements.map(m => (m.heartRate ?? m.weight ?? m.glucose)!)]
   const all = sequences.flat(), min = Math.min(...all), max = Math.max(...all)
@@ -26,6 +29,7 @@ async function draw() {
   ctx.fillText(String(max), 2, 16); ctx.fillText(String(min), 2, 150)
   for (let series = 0; series < sequences.length; series++) {
     ctx.setStrokeStyle(series === 0 ? '#27664e' : '#345ea3'); ctx.setFillStyle(series === 0 ? '#27664e' : '#345ea3')
+    ctx.setLineDash(series === 0 ? [] : [6, 4], 0)
     ctx.setLineWidth(2); ctx.beginPath()
     sequences[series]!.forEach((value, index) => {
       const x = 40 + (last === first ? 110 : (timestamps[index]! - first) / (last - first) * 225)
@@ -42,6 +46,8 @@ async function draw() {
   ctx.draw()
 }
 watch(() => props.points, draw, { immediate: true })
+/** 销毁图表后拒绝异步绘制旧老人的测量点。 */
+onBeforeUnmount(() => { alive = false; drawEpoch++ })
 /** 明确发起所选条件的趋势读取。 */
 function query() { requested.value = true; emit('query', type.value, scene.value, days.value) }
 </script>
@@ -55,7 +61,7 @@ function query() { requested.value = true; emit('query', type.value, scene.value
     <text class="body-copy">单位：{{ units[type] }}。仅展示实际记录，不作医学判断。</text>
     <text v-if="requested && !points.length && !disabled" class="body-copy">暂无记录。</text>
     <template v-if="points.length">
-      <text v-if="type === 'BLOOD_PRESSURE'" class="body-copy">血压：收缩压、舒张压对应相同测量点；下面逐点列出两项数值。</text>
+      <text v-if="type === 'BLOOD_PRESSURE'" class="body-copy">实线：收缩压；虚线：舒张压。两条线对应相同测量点，下面逐点列出两项数值。</text>
       <scroll-view scroll-x><canvas canvas-id="health-trend" id="health-trend" style="width:280px;height:180px" /></scroll-view>
       <text class="body-copy">{{ healthTime(points[0]!.measurement.measuredAt) }} 至 {{ healthTime(points[points.length - 1]!.measurement.measuredAt) }}</text>
       <view v-for="point in values" :key="point.id" class="health-history">
@@ -65,4 +71,3 @@ function query() { requested.value = true; emit('query', type.value, scene.value
     </template>
   </view>
 </template>
-

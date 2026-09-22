@@ -73,7 +73,10 @@ export function measurementText(m: Measurement): string {
 /** 查询整段上海日期，结束日期包含当天，接口仍为左闭右开。 */
 export function healthDateRange(start: string, end: string): { from: string; to: string } {
   const from = new Date(start + 'T00:00:00+08:00'), last = new Date(end + 'T00:00:00+08:00')
-  if (!Number.isFinite(from.getTime()) || !Number.isFinite(last.getTime()) || from > last) throw new Error('请选择有效的起止日期')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)
+      || !Number.isFinite(from.getTime()) || !Number.isFinite(last.getTime()) || from > last
+      || healthTime(from.toISOString()).slice(0, 10) !== start || healthTime(last.toISOString()).slice(0, 10) !== end)
+    throw new Error('请选择有效的起止日期')
   return { from: from.toISOString(), to: new Date(last.getTime() + 86400000).toISOString() }
 }
 /** 近7、30、90天按上海自然日计算，包含今天。 */
