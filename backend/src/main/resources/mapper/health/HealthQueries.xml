@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.elderlycare.platform.health.mapper.HealthQueries">
+  <sql id="validBinding">
+    eb.community_id = e.community_id AND eb.elder_id = e.id AND eb.active = TRUE
+    AND owner.id = eb.account_id AND owner.community_id = e.community_id AND owner.role = 'ELDER' AND owner.status = 'ACTIVE'
+  </sql>
+  <sql id="validGrant">
+    g.community_id = e.community_id AND g.elder_id = e.id AND g.revoked = FALSE AND g.expires_at &gt; #{now}
+    AND g.binding_id = eb.id AND g.binding_version = eb.version AND g.granted_by = eb.account_id
+    AND <include refid="com.elderlycare.platform.health.mapper.HealthQueries.validBinding"/>
+    AND recipient.id = g.recipient_id AND recipient.community_id = e.community_id AND recipient.status = 'ACTIVE'
+    AND ((g.scope = 'FAMILY_READ' AND recipient.role = 'FAMILY')
+      OR (g.scope = 'COMMUNITY_ASSIST' AND recipient.role = 'COMMUNITY_OPERATOR'))
+    AND e.status = 'ACTIVE'
+  </sql>
+  <sql id="elderPermission">
+    e.community_id = #{actor.communityId}
+    <choose>
+      <when test="actor.role == 'ELDER'">
+        AND EXISTS (SELECT 1 FROM elder_account_binding eb JOIN user_account owner ON owner.id = eb.account_id
+          WHERE <include refid="validBinding"/> AND eb.account_id = #{actor.id})
+      </when>
+      <when test="actor.role == 'FAMILY' or actor.role == 'COMMUNITY_OPERATOR'">
+        AND EXISTS (SELECT 1 FROM health_grant g
+          JOIN elder_account_binding eb ON eb.id = g.binding_id
+          JOIN user_account owner ON owner.id = eb.account_id
+          JOIN user_account recipient ON recipient.id = g.recipient_id
+          WHERE <include refid="validGrant"/> AND g.recipient_id = #{actor.id}
+          <choose><when test="actor.role == 'FAMILY'">AND g.scope = 'FAMILY_READ'</when>
+          <otherwise>AND g.scope = 'COMMUNITY_ASSIST'</otherwise></choose>)
+      </when>
+      <otherwise>AND 1 = 0</otherwise>
+    </choose>
+  </sql>
+  <sql id="recordPermission">
+    r.community_id = e.community_id AND <include refid="elderPermission"/>
+    <if test="actor.role == 'COMMUNITY_OPERATOR'">
+      AND r.original_actor_id = #{actor.id} AND r.entry_mode = 'COMMUNITY_ASSIST' AND r.owner_taken_over = FALSE
+    </if>
+    <if test="actor.role == 'FAMILY'">AND r.status = 'ACTIVE'</if>
+  </sql>
+  <sql id="recordFilter">
+    <include refid="recordPermission"/> AND r.elder_id = #{elderId}
+    <if test="type != null">AND r.type = #{type}</if>
+    <if test="status != null">AND r.status = #{status}</if>
+    <if test="scene != null">AND r.glucose_scene = #{scene}</if>
+    <if test="from != null">AND r.measured_at &gt;= #{from}</if>
+    <if test="to != null">AND r.measured_at &lt; #{to}</if>
+  </sql>
+  <select id="elders" resultType="com.elderlycare.platform.elder.domain.ElderProfileRow">
+    SELECT e.* FROM elder_profile e WHERE <include refid="elderPermission"/>
+    ORDER BY e.id DESC LIMIT #{limit} OFFSET #{offset}
+  </select>
+  <select id="elderCount" resultType="long">
+    SELECT COUNT(*) FROM elder_profile e WHERE <include refid="elderPermission"/>
+  </select>
+  <select id="elder" resultType="com.elderlycare.platform.elder.domain.ElderProfileRow">
+    SELECT e.* FROM elder_profile e WHERE e.id = #{elderId} AND <include refid="elderPermission"/>
+  </select>
+  <select id="ownerBinding" resultType="com.elderlycare.platform.booking.domain.BindingRow">
+    SELECT eb.* FROM elder_account_binding eb JOIN elder_profile e ON e.id = eb.elder_id
+    JOIN user_account owner ON owner.id = eb.account_id
+    WHERE <include refid="validBinding"/> AND e.community_id = #{actor.communityId}
+      AND e.id = #{elderId} AND eb.account_id = #{actor.id}
+  </select>
+  <select id="records" resultType="com.elderlycare.platform.health.domain.HealthRecordRow">
+    SELECT r.* FROM health_record r JOIN elder_profile e ON e.id = r.elder_id
+    WHERE <include refid="recordFilter"/>
+    <choose><when test="ascending">ORDER BY r.measured_at, r.id</when>
+      <otherwise>ORDER BY r.measured_at DESC, r.id DESC</otherwise></choose>
+    LIMIT #{limit} OFFSET #{offset}
+  </select>
+  <select id="recordCount" resultType="long">
+    SELECT COUNT(*) FROM health_record r JOIN elder_profile e ON e.id = r.elder_id WHERE <include refid="recordFilter"/>
+  </select>
+  <select id="record" resultType="com.elderlycare.platform.health.domain.HealthRecordRow">
+    SELECT r.* FROM health_record r JOIN elder_profile e ON e.id = r.elder_id
+    WHERE r.id = #{id} AND <include refid="recordPermission"/>
+  </select>
+  <update id="advance">
+    UPDATE health_record SET version = #{row.version}, status = #{row.status}, measured_at = #{row.measuredAt},
+      glucose_scene = #{row.glucoseScene}, owner_taken_over = #{row.ownerTakenOver}, updated_at = #{row.updatedAt}
+    WHERE id = #{row.id} AND community_id = #{row.communityId} AND version = #{expected}
+  </update>
+  <select id="resolveAttempts" resultType="long">
+    SELECT COUNT(*) FROM health_event WHERE community_id = #{actor.communityId} AND actor_id = #{actor.id}
+      AND action = 'RECIPIENT_RESOLVE' AND occurred_at &gt;= #{since}
+  </select>
+</mapper>
