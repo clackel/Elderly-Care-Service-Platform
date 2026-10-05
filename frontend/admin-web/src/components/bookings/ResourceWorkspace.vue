@@ -21,6 +21,7 @@ function paginate(page: number) {
 onBeforeRouteLeave(
   () =>
     !session.account ||
+    session.account.passwordChangeRequired ||
     (!state.busy && (!state.editor || window.confirm('离开将清除尚未保存的资料，确定离开吗？'))),
 )
 </script>

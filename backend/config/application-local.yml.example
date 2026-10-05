@@ -12,6 +12,14 @@ server:
 
 app:
   dev-password: '' # 填写 12～64 位后台登录密码；仅在首次创建 dev.operator 时写入。
+  # 首次开通本社区的平台管理员时临时启用；完成后移除enabled和password。
+  # bootstrap:
+  #   enabled: true
+  #   community-id: 10001
+  #   community-name: '开发示例社区' # 仅社区尚不存在时使用。
+  #   username: 'local.admin'
+  #   display-name: '开发管理员'
+  #   password: '' # 12～64字符且UTF-8不超过72字节；首次登录必须修改。
   # dev 默认使用公开的合成数据测试密钥；如已有数据使用自定义密钥，请填写原密钥。
   # elder:
   #   encryption-key: '32 个随机字节的 Base64 编码'

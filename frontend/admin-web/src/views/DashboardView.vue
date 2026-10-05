@@ -13,7 +13,9 @@ const errorMessage = ref('')
 const visibleModules = computed(() =>
   featureModules.filter(
     (module) =>
-      module.path === 'health'
+      module.path === 'accounts'
+        ? session.canManageAccounts
+        : module.path === 'health'
         ? session.canAssistHealth
         : !['elders', 'services', 'consent', 'bookings', 'fulfillment'].includes(module.path) ||
           session.canManageElders,
@@ -75,7 +77,7 @@ onMounted(loadCommunity)
       <p>{{ module.description }}</p>
       <span class="module-status"
         >{{
-          ['elders', 'health', 'services', 'consent', 'bookings', 'fulfillment'].includes(module.path)
+          ['accounts', 'elders', 'health', 'services', 'consent', 'bookings', 'fulfillment'].includes(module.path)
             ? '进入管理'
             : '页面已预留'
         }}

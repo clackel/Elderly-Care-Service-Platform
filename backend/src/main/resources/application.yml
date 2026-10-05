@@ -57,6 +57,13 @@ springdoc:
   swagger-ui:
     enabled: false
 app:
+  bootstrap:
+    enabled: ${APP_BOOTSTRAP_ENABLED:false}
+    community-id: ${APP_BOOTSTRAP_COMMUNITY_ID:0}
+    community-name: ${APP_BOOTSTRAP_COMMUNITY_NAME:}
+    username: ${APP_BOOTSTRAP_USERNAME:}
+    display-name: ${APP_BOOTSTRAP_DISPLAY_NAME:}
+    password: ${APP_BOOTSTRAP_PASSWORD:}
   booking:
     advance-minutes: ${BOOKING_ADVANCE_MINUTES:60}
     horizon-days: ${BOOKING_HORIZON_DAYS:30}

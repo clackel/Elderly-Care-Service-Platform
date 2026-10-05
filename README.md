@@ -4,15 +4,16 @@
 
 ## 当前范围
 
-- Spring Boot：统一响应、异常处理、请求追踪、开发环境会话登录、CSRF、角色和社区权限、Flyway 迁移。
+- Spring Boot：统一响应、异常处理、请求追踪、后台账号密码及微信会话登录、CSRF、角色和社区权限、Flyway 迁移。
+- 后台账号：平台管理员在本社区创建、调整角色、启停及重置密码，初始与重置密码强制修改，保留操作记录、登录限流和旧会话撤销。
 - 老人档案后端：建档、精确检索、分页、详情、版本更新、归档恢复、加密存储及操作历史。
 - 养老服务预约：五类目录、提供方及人员维护、社区代预约、人工确认与改派、取消、履约结果和异常终止。
 - 健康记录：血压、心率、体重、血糖手工录入、分页与详情、原始点趋势、更正作废和版本历史；独立家属只读及指定社区人员代录授权。
-- Vue 管理后台：老人档案、预约处理、服务与人员配置、移动账号核验、本人绑定和家属预约授权。
+- Vue 管理后台：后台账号与密码管理、老人档案、预约处理、服务与人员配置、移动账号核验、本人绑定和家属预约授权。
 - uni-app 小程序：微信登录入口、本人/家属预约、进度与取消、工作人员执行及预约授权；保留四个导航、字号切换及电话求助入口。
 - 工程配套：版本锁定、ESLint、严格 TypeScript、集成测试、CI、基础设施配置。
 
-管理端档案位于 `/elders`，服务与人员位于 `/services`，预约位于 `/bookings`，账号与预约授权位于 `/consent`，指定社区人员的健康协助录入位于 `/health`。移动端“健康”提供本人记录管理、独立授权及获授权家属查看。求助投递、短信、医疗附件和设备接入尚未实现。微信入口需配置真实凭据和 HTTPS 合法域名，见[预约接口与配置](docs/SERVICE_BOOKING_API.md)。
+管理端后台账号位于 `/accounts`，本人改密位于 `/password`，档案位于 `/elders`，服务与人员位于 `/services`，预约位于 `/bookings`，移动账号与预约授权位于 `/consent`，指定社区人员的健康协助录入位于 `/health`。移动端“健康”提供本人记录管理、独立授权及获授权家属查看。求助投递、短信、医疗附件和设备接入尚未实现。微信入口需配置真实凭据和 HTTPS 合法域名，见[预约接口与配置](docs/SERVICE_BOOKING_API.md)。
 
 当前包含预约申请和人工安排，不包含支付退款、复杂容量与自动派单、投诉回访与统计、独立审计与隐私申请模块；保留档案及预约的操作记录和访问保护。
 
@@ -38,7 +39,9 @@ $env:APP_DEV_PASSWORD = '替换为你自己的12至64位开发密码'
 mvn spring-boot:run '-Dspring-boot.run.profiles=dev'
 ```
 
-开发账号：`dev.operator`。首次启动以环境变量中的密码创建账号；后续启动不会覆盖已有密码。开发数据库位于 `backend/.data/`，仅允许合成数据。开发服务只监听 `127.0.0.1`。
+开发账号：`dev.operator`。首次启动以环境变量中的密码创建账号，首次登录必须改密；后续启动不会覆盖已有密码。密码为 12—64 个字符，UTF-8 长度不超过 72 字节。开发数据库位于 `backend/.data/`，仅允许合成数据。开发服务只监听 `127.0.0.1`。
+
+`dev.operator` 为社区运营角色，不具备后台账号管理权限。首次平台管理员需显式设置 `APP_BOOTSTRAP_*`，或在本地配置中临时启用 `app.bootstrap`，见[首次平台管理员配置](docs/ADMIN_ACCOUNTS_API.md#首次平台管理员配置)。初始化不会提升现有开发账号或覆盖其密码，完成后移除初始化开关和密码。
 
 **使用本机 MySQL，并保存配置**：
 
@@ -55,7 +58,7 @@ cd backend
 mvn spring-boot:run '-Dspring-boot.run.profiles=dev,local'
 ```
 
-必须以 `backend` 为工作目录并按顺序启用 `dev,local`，才能自动加载本机 MySQL 配置，同时保留开发登录、回环监听和进程内会话；不需要 Redis 或 RabbitMQ。只启用 `dev` 会使用 H2 文件数据库，不会读取 `application-local.yml`。实际配置被 Git 忽略，位于源码资源目录之外，不会打包进 JAR。配置密码可重复使用，但修改 `app.dev-password` 不会重置已有账号密码。仅使用合成测试数据；已有加密数据需继续使用原密钥。
+必须以 `backend` 为工作目录并按顺序启用 `dev,local`，才能自动加载本机 MySQL 配置，同时保留开发账号初始化、回环监听和进程内会话；不需要 Redis 或 RabbitMQ。只启用 `dev` 会使用 H2 文件数据库，不会读取 `application-local.yml`。实际配置被 Git 忽略，位于源码资源目录之外，不会打包进 JAR。配置密码可重复使用，但修改 `app.dev-password` 不会重置已有账号密码。仅使用合成测试数据；已有加密数据需继续使用原密钥。
 
 IDE 手动调试：主类为 `com.elderlycare.platform.CareApplication`，工作目录设为仓库的 `backend` 目录，Active profiles 设为 `dev,local`（或在 Program arguments 中填写 `--spring.profiles.active=dev,local`）。不需要启动脚本。
 
@@ -109,9 +112,10 @@ npm run build:mp-weixin
 - [开发规范](docs/DEVELOPMENT.md)
 - [Git 提交消息规范](docs/GIT_COMMIT_CONVENTIONS.md)
 - [基础框架接口](docs/FRAMEWORK_API.md)
+- [后台账号与密码接口](docs/ADMIN_ACCOUNTS_API.md)
 - [老人档案接口](docs/ELDER_API.md)
 - [养老服务预约接口与配置](docs/SERVICE_BOOKING_API.md)
 - [健康记录与独立授权接口](docs/HEALTH_API.md)
 - [依赖与参考资料](docs/REFERENCES.md)
 
-默认配置面向 MySQL、Redis 和 RabbitMQ，必须提供外部环境变量。小程序微信登录已提供服务端会话入口，需要真实 `WECHAT_APP_ID/WECHAT_APP_SECRET`；正式管理员认证和多因素认证仍未接入，非 `dev` 环境没有开发密码登录入口。开发后台不能直接公开部署。
+默认配置面向 MySQL、Redis 和 RabbitMQ，必须提供外部环境变量。后台密码登录在各环境启用，初始管理员需显式开通；非 `dev` 不创建开发账号。小程序微信登录需要真实 `WECHAT_APP_ID/WECHAT_APP_SECRET`。当前优先完成大创目标，多因素认证和真实社区运营接入尚未实现；`dev` 仅适用于本机合成数据开发。

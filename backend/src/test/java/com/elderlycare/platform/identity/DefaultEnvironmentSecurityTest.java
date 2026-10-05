@@ -27,8 +27,9 @@ class DefaultEnvironmentSecurityTest {
     @Autowired MockMvc mvc;
 
     @Test
-    void developmentLoginCannotBeUsedOutsideDevProfile() throws Exception {
+    void unknownAccountCannotUseFormalLoginOutsideDevProfile() throws Exception {
         mvc.perform(get("/api/v1/auth/capabilities")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.adminLogin").value(true))
                 .andExpect(jsonPath("$.data.developmentLogin").value(false))
                 .andExpect(jsonPath("$.data.wechatLogin").value(false));
         mvc.perform(post("/api/v1/auth/admin/login").with(csrf())

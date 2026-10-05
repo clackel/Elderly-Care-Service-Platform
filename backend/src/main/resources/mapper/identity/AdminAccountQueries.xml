@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.elderlycare.platform.identity.mapper.AdminAccountQueries">
+  <sql id="backendScope">
+    community_id = #{communityId} AND role IN ('COMMUNITY_OPERATOR','DUTY_OFFICER','PLATFORM_ADMIN','AUDITOR')
+  </sql>
+  <sql id="filters">
+    <include refid="backendScope"/>
+    <if test="keyword != null">AND (LOCATE(#{keyword}, username) &gt; 0 OR LOCATE(#{keyword}, display_name) &gt; 0)</if>
+    <if test="role != null">AND role = #{role}</if>
+    <if test="status != null">AND status = #{status}</if>
+  </sql>
+  <select id="list" resultType="com.elderlycare.platform.identity.domain.UserAccount">
+    SELECT * FROM user_account WHERE <include refid="filters"/> ORDER BY id DESC LIMIT #{limit} OFFSET #{offset}
+  </select>
+  <select id="count" resultType="long">
+    SELECT COUNT(*) FROM user_account WHERE <include refid="filters"/>
+  </select>
+  <select id="target" resultType="com.elderlycare.platform.identity.domain.UserAccount">
+    SELECT * FROM user_account WHERE id = #{id} AND <include refid="backendScope"/>
+  </select>
+  <select id="activeAdmins" resultType="long">
+    SELECT COUNT(*) FROM user_account WHERE community_id = #{communityId} AND role = 'PLATFORM_ADMIN' AND status = 'ACTIVE'
+  </select>
+  <update id="update">
+    UPDATE user_account SET display_name = #{account.displayName}, role = #{account.role}, status = #{account.status},
+      password_hash = #{account.passwordHash}, password_change_required = #{account.passwordChangeRequired},
+      credential_version = #{account.credentialVersion}, version = #{account.version}, updated_at = #{now}
+    WHERE id = #{account.id} AND community_id = #{account.communityId} AND version = #{expected}
+  </update>
+  <update id="revokeAssistance">
+    UPDATE health_grant SET revoked = TRUE, revoked_at = #{now}, revoked_by = #{actorId}, version = version + 1
+    WHERE community_id = #{communityId} AND recipient_id = #{accountId} AND scope = 'COMMUNITY_ASSIST' AND revoked = FALSE
+  </update>
+</mapper>

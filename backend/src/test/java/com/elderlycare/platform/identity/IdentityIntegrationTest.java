@@ -11,6 +11,8 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import com.elderlycare.platform.identity.service.AdminLoginThrottle;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -28,10 +30,11 @@ class IdentityIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired PasswordEncoder encoder;
     @Autowired ObjectMapper json;
+    @MockitoBean AdminLoginThrottle loginThrottle;
 
     @BeforeEach
     void resetAccounts() {
-        jdbc.update("UPDATE user_account SET status='ACTIVE', role='COMMUNITY_OPERATOR', community_id=10001 WHERE username='dev.operator'");
+        jdbc.update("UPDATE user_account SET status='ACTIVE', role='COMMUNITY_OPERATOR', community_id=10001, password_change_required=FALSE WHERE username='dev.operator'");
         jdbc.update("DELETE FROM user_account WHERE username='second.operator'");
         jdbc.update("DELETE FROM community WHERE id=10002");
         jdbc.update("INSERT INTO community (id,name) VALUES (10002,'另一社区')");
