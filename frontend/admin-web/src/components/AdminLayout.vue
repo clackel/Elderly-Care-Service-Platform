@@ -12,7 +12,9 @@ const loggingOut = ref(false)
 const visibleModules = computed(() =>
   featureModules.filter(
     (module) =>
-      module.path === 'health'
+      module.path === 'accounts'
+        ? session.canManageAccounts
+        : module.path === 'health'
         ? session.canAssistHealth
         : !['elders', 'services', 'consent', 'bookings', 'fulfillment'].includes(module.path) ||
           session.canManageElders,
@@ -60,8 +62,9 @@ async function logout() {
           >运营中心 <span class="muted">/ {{ route.meta.title }}</span></span
         >
         <div class="account-menu">
-          <span>{{ session.account?.displayName }}</span
-          ><el-button :loading="loggingOut" @click="logout">退出登录</el-button>
+          <span>{{ session.account?.displayName }}</span>
+          <RouterLink to="/password">修改密码</RouterLink>
+          <el-button :loading="loggingOut" @click="logout">退出登录</el-button>
         </div>
       </header>
       <main class="page-content"><RouterView :key="route.path" /></main>

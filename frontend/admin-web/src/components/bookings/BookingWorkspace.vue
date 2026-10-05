@@ -24,6 +24,7 @@ function paginate(value: number) {
 onBeforeRouteLeave(
   () =>
     !session.account ||
+    session.account.passwordChangeRequired ||
     (!records.busy &&
       (!records.creating ||
         window.confirm('离开将清除预约草稿；提交结果不确定时请先到列表核实。确定离开吗？'))),

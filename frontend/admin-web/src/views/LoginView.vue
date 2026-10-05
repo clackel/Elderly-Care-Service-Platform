@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { authApi } from '../api/auth'
 import { useSessionStore } from '../stores/session'
@@ -10,24 +10,30 @@ const username = ref('')
 const password = ref('')
 const loading = ref(false)
 const available = ref(false)
+const development = ref(false)
 const errorMessage = ref('')
+let disposed = false
 
 onMounted(async () => {
   try {
-    available.value = (await authApi.capabilities()).developmentLogin
-    if (!available.value) errorMessage.value = '当前环境尚未接入正式管理员认证，请联系项目管理员。'
+    const capabilities = await authApi.capabilities()
+    if (disposed) return
+    available.value = capabilities.adminLogin
+    development.value = capabilities.developmentLogin
+    if (!available.value) errorMessage.value = '当前环境未开放后台登录，请联系项目管理员。'
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '无法读取系统状态'
   }
 })
 
+/** 登录后按服务端要求进入改密页或工作台，凭据仅在当前表单内短期保存。 */
 async function submit() {
   if (loading.value || !available.value) return
   loading.value = true
   errorMessage.value = ''
   try {
     await session.login(username.value.trim(), password.value)
-    await router.replace(session.canAccessAdmin ? '/' : '/forbidden')
+    await router.replace(session.canAccessAdmin ? session.account?.passwordChangeRequired ? '/password' : '/' : '/forbidden')
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '登录失败'
   } finally {
@@ -35,6 +41,11 @@ async function submit() {
     password.value = ''
   }
 }
+
+onBeforeUnmount(() => {
+  disposed = true
+  password.value = ''
+})
 </script>
 
 <template>
@@ -50,8 +61,8 @@ async function submit() {
       <h2>登录管理后台</h2>
       <p class="muted">使用已分配的社区管理账号</p>
       <el-alert
-        v-if="available"
-        title="开发环境：仅用于基础框架联调"
+        v-if="development"
+        title="开发环境：请使用合成数据"
         type="info"
         :closable="false"
       />

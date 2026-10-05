@@ -24,11 +24,13 @@ public class AuthController {
         this.wechat = wechat;
     }
 
+    /** 返回当前会话的CSRF请求头名称及令牌，写操作前读取。 */
     @GetMapping("/csrf")
     public ApiResponse<CsrfDto> csrf(CsrfToken token) {
         return ApiResponse.ok(new CsrfDto(token.getHeaderName(), token.getToken()));
     }
 
+    /** 返回实时账号身份及必须修改初始密码的状态。 */
     @GetMapping("/me")
     public ApiResponse<AccountDto> me(Authentication authentication) {
         return ApiResponse.ok(AccountDto.from(access.current(authentication)));
@@ -37,9 +39,9 @@ public class AuthController {
     /** 返回实际配置的登录入口能力，不生成模拟认证身份。 */
     @GetMapping("/capabilities")
     public ApiResponse<CapabilitiesDto> capabilities() {
-        return ApiResponse.ok(new CapabilitiesDto(environment.acceptsProfiles(Profiles.of("dev")), wechat.enabled()));
+        return ApiResponse.ok(new CapabilitiesDto(true, environment.acceptsProfiles(Profiles.of("dev")), wechat.enabled()));
     }
 
     public record CsrfDto(String headerName, String token) {}
-    public record CapabilitiesDto(boolean developmentLogin, boolean wechatLogin) {}
+    public record CapabilitiesDto(boolean adminLogin, boolean developmentLogin, boolean wechatLogin) {}
 }

@@ -3,10 +3,9 @@ package com.elderlycare.platform.identity.api;
 import com.elderlycare.platform.booking.api.BookingRequests;
 import com.elderlycare.platform.common.api.ApiResponse;
 import com.elderlycare.platform.identity.service.WechatLoginService;
+import com.elderlycare.platform.identity.service.AccountSessions;
 import jakarta.servlet.http.*;
 import jakarta.validation.Valid;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -24,8 +23,7 @@ public class WechatLoginController {
     public ApiResponse<AccountDto> login(@Valid @RequestBody BookingRequests.Wechat input,
             HttpServletRequest request, HttpServletResponse response) {
         var a = login.login(input.code(), input.enrollmentToken(), request.getRemoteAddr());
-        var auth = UsernamePasswordAuthenticationToken.authenticated(a.getUsername(), null,
-                AuthorityUtils.createAuthorityList("ROLE_" + a.getRole()));
+        var auth = AccountSessions.authentication(a);
         new ChangeSessionIdAuthenticationStrategy().onAuthentication(auth, request, response);
         new CsrfAuthenticationStrategy(new HttpSessionCsrfTokenRepository()).onAuthentication(auth, request, response);
         var context = SecurityContextHolder.createEmptyContext(); context.setAuthentication(auth);

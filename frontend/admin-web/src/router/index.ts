@@ -6,6 +6,7 @@ export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
+    { path: '/password', name: 'password', component: () => import('../views/PasswordChangeView.vue') },
     { path: '/forbidden', component: () => import('../views/ForbiddenView.vue') },
     {
       path: '/',
@@ -20,7 +21,9 @@ export const router = createRouter({
         ...featureModules.map((module) => ({
           path: module.path,
           component:
-            module.path === 'health'
+            module.path === 'accounts'
+              ? () => import('../views/AdminAccountsView.vue')
+              : module.path === 'health'
               ? () => import('../views/HealthView.vue')
               : module.path === 'elders'
               ? () => import('../views/EldersView.vue')
@@ -35,6 +38,7 @@ export const router = createRouter({
             title: module.title,
             description: module.description,
             requiresHealthAssist: module.path === 'health',
+            requiresAccountAdmin: module.path === 'accounts',
             requiresElderAccess: [
               'elders',
               'services',
@@ -50,7 +54,7 @@ export const router = createRouter({
   ],
 })
 
-// 路由守卫分别检查档案管理和健康协助入口；具体对象及独立授权仍由后端逐请求核验。
+// 先处理强制改密，再判断各业务入口；未完成改密的账号不会挂载后台布局。
 router.beforeEach(async (to) => {
   const session = useSessionStore()
   if (!session.initialized) {
@@ -60,11 +64,15 @@ router.beforeEach(async (to) => {
       return to.path === '/login' ? true : '/login'
     }
   }
+  if (session.canAccessAdmin && session.account?.passwordChangeRequired) {
+    return to.path === '/password' ? true : '/password'
+  }
   if (to.path === '/login') return session.canAccessAdmin ? '/' : true
   if (!session.account) return '/login'
   if (!session.canAccessAdmin && to.path !== '/forbidden') return '/forbidden'
   if (to.meta.requiresElderAccess && !session.canManageElders) return '/forbidden'
   if (to.meta.requiresHealthAssist && !session.canAssistHealth) return '/forbidden'
+  if (to.meta.requiresAccountAdmin && !session.canManageAccounts) return '/forbidden'
   return true
 })
 
@@ -72,4 +80,11 @@ router.beforeEach(async (to) => {
 window.addEventListener('session-invalidated', () => {
   useSessionStore().clear()
   if (router.currentRoute.value.path !== '/login') void router.replace('/login')
+})
+
+// 强制改密属于受限登录态，保留身份并立即转向独立页面卸载业务数据。
+window.addEventListener('password-change-required', () => {
+  const session = useSessionStore()
+  if (session.account) session.account = { ...session.account, passwordChangeRequired: true }
+  if (router.currentRoute.value.path !== '/password') void router.replace('/password')
 })

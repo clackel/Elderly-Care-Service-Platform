@@ -19,6 +19,7 @@ export interface CurrentAccount {
   displayName: string
   role: Role
   communityId: string | null
+  passwordChangeRequired: boolean
 }
 
 export interface Community {
@@ -27,6 +28,7 @@ export interface Community {
 }
 
 export interface AuthCapabilities {
+  adminLogin: boolean
   developmentLogin: boolean
   wechatLogin: boolean
 }

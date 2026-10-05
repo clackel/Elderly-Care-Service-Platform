@@ -13,6 +13,9 @@ public class UserAccount {
     private String role;
     private Long communityId;
     private String status;
+    private long version;
+    private long credentialVersion;
+    private boolean passwordChangeRequired;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -28,4 +31,10 @@ public class UserAccount {
     public void setCommunityId(Long communityId) { this.communityId = communityId; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public long getVersion() { return version; }
+    public void setVersion(long version) { this.version = version; }
+    public long getCredentialVersion() { return credentialVersion; }
+    public void setCredentialVersion(long credentialVersion) { this.credentialVersion = credentialVersion; }
+    public boolean isPasswordChangeRequired() { return passwordChangeRequired; }
+    public void setPasswordChangeRequired(boolean passwordChangeRequired) { this.passwordChangeRequired = passwordChangeRequired; }
 }

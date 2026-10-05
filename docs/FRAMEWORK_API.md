@@ -1,14 +1,15 @@
 # 基础框架接口
 
-本文记录已实现的基础框架接口。老人档案见[老人档案接口](ELDER_API.md)，服务预约、微信开通及预约授权见[预约接口](SERVICE_BOOKING_API.md)，独立健康域见[健康接口](HEALTH_API.md)；其他规划能力见[业务系统设计](SYSTEM_DESIGN.md#7-接口契约)。
+本文记录已实现的基础框架接口。后台账号与密码维护见[后台账号接口](ADMIN_ACCOUNTS_API.md)，老人档案见[老人档案接口](ELDER_API.md)，服务预约、微信开通及预约授权见[预约接口](SERVICE_BOOKING_API.md)，独立健康域见[健康接口](HEALTH_API.md)；其他规划能力见[业务系统设计](SYSTEM_DESIGN.md#7-接口契约)。
 
 | 方法 | 路径 | 当前行为 |
 |---|---|---|
-| GET | `/api/v1/auth/capabilities` | 公开；返回当前开发登录和微信登录能力标志 |
+| GET | `/api/v1/auth/capabilities` | 公开；返回 adminLogin、developmentLogin、wechatLogin 能力标志 |
 | GET | `/api/v1/auth/csrf` | 公开；创建或读取当前会话的 CSRF 凭证 |
-| POST | `/api/v1/auth/admin/login` | 仅 dev；URL 编码的 username/password，需 CSRF 请求头 |
+| POST | `/api/v1/auth/admin/login` | 各环境的后台账号登录；URL 编码的 username/password，需 CSRF 请求头 |
 | POST | `/api/v1/auth/wechat/login` | code 和首次登录 enrollmentToken；向微信核验身份并建立服务器会话，需 CSRF |
-| GET | `/api/v1/auth/me` | 登录后返回账号 ID、显示名、角色及社区 ID |
+| GET | `/api/v1/auth/me` | 登录后返回账号 ID、显示名、角色、社区 ID 及 passwordChangeRequired |
+| POST | `/api/v1/auth/password` | 后台账号本人改密；requestId/currentPassword/newPassword；成功注销当前会话 |
 | POST | `/api/v1/auth/logout` | 需 CSRF；销毁当前会话并删除 Cookie |
 | GET | `/api/v1/system/community` | 后台角色；查询当前账号所属的有效社区 |
 | GET | `/actuator/health` | 公开健康检查；遵循 Actuator 自身响应协议 |
@@ -20,8 +21,13 @@ Swagger 在 dev 环境的 `/swagger-ui/index.html`，OpenAPI JSON 在 `/v3/api-d
 1. 请求 `/auth/csrf`，保留响应 Cookie，读取 `data.headerName` 和 `data.token`。
 2. 使用该请求头提交 `/auth/admin/login`，Content-Type 为 `application/x-www-form-urlencoded`。
 3. 服务端轮换会话 ID；浏览器使用新的 HttpOnly Cookie。
-4. 调用 `/auth/me` 恢复身份，调用 `/system/community` 读取当前社区。
-5. 注销前重新请求 CSRF，随后 POST `/auth/logout`。
+4. 根据 `passwordChangeRequired` 判断是否必须改密；为 true 时先调用 `/auth/password`，成功后用新密码重新登录。
+5. 调用 `/auth/me` 恢复身份；完成改密后可调用 `/system/community` 读取当前社区。
+6. 注销前重新请求 CSRF，随后 POST `/auth/logout`。
+
+`adminLogin` 当前始终为 true；`developmentLogin` 仅表示 dev 环境，用于兼容和开发提示，不决定密码登录是否开放。`wechatLogin` 表示微信凭据是否已配置。
+
+强制改密期间仅允许 GET `/auth/me`、`/auth/csrf`、`/auth/capabilities`，以及 POST `/auth/password`、`/auth/logout`。业务接口返回 403 `PASSWORD_CHANGE_REQUIRED`，不只依靠前端跳转保护。
 
 ```json
 {
@@ -31,22 +37,27 @@ Swagger 在 dev 环境的 `/swagger-ui/index.html`，OpenAPI JSON 在 `/v3/api-d
     "id": "10001",
     "displayName": "开发运营账号",
     "role": "COMMUNITY_OPERATOR",
-    "communityId": "10001"
+    "communityId": "10001",
+    "passwordChangeRequired": false
   },
   "traceId": "服务端生成的 UUID"
 }
 ```
 
-身份和社区必须由服务端确定。接口不接受客户端指定角色或指定社区，用户表与社区表均为持久化读取。
+认证身份和社区必须由服务端确定。登录接口不接受客户端指定角色或社区，用户表与社区表均为持久化读取。后台账号管理可在已授权社区内指定固定后台角色，但不能改变登录会话所属身份。
+
+会话保存登录时的凭证版本，服务端逐请求重新读取账号。密码、角色或状态变更后，旧会话返回 401 `SESSION_REVOKED` 并失效；恢复账号不会恢复旧会话。登录限流、密码约束与首次平台管理员配置见[后台账号接口](ADMIN_ACCOUNTS_API.md)。
 
 ## 错误
 
 | 状态 | code | 含义 |
 |---|---|---|
 | 400 | INVALID_ARGUMENT | 入口校验失败 |
-| 401 | UNAUTHENTICATED / INVALID_CREDENTIALS / SESSION_REVOKED | 未登录、密码错误或账号停用 |
+| 401 | UNAUTHENTICATED / INVALID_CREDENTIALS / SESSION_REVOKED | 未登录、凭据无效或账号及登录版本已变更 |
 | 403 | FORBIDDEN / COMMUNITY_REQUIRED / COMMUNITY_UNAVAILABLE | 权限不足、CSRF 失败或社区不可用 |
+| 403 | PASSWORD_CHANGE_REQUIRED | 必须先修改初始或重置密码 |
 | 404 | NOT_FOUND | 已授权请求的资源不存在 |
+| 429 | LOGIN_RATE_LIMITED | 登录请求过于频繁，稍后重试 |
 | 500 | INTERNAL_ERROR | 未预期异常，不向客户端暴露内部内容 |
 
 普通错误响应的 `data` 为 null。未授权访问优先按安全过滤器返回 401/403。预约及微信入口还会返回 409 状态冲突、429 登录限流、502 微信服务暂不可用、503 微信凭据未配置，详见[预约错误契约](SERVICE_BOOKING_API.md#常见错误)。

@@ -14,7 +14,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import com.elderlycare.platform.identity.service.AccountSessions;
+import com.elderlycare.platform.identity.service.IdentityService;
+import com.elderlycare.platform.identity.service.AdminLoginThrottle;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -46,6 +49,8 @@ class ElderProfileIntegrationTest {
     @Autowired ObjectMapper json;
     @Autowired PasswordEncoder passwords;
     @Autowired ElderProfileService service;
+    @Autowired IdentityService identities;
+    @MockitoBean AdminLoginThrottle loginThrottle;
     @MockitoSpyBean ElderAuditMapper audits;
     @LocalServerPort int port;
 
@@ -58,7 +63,7 @@ class ElderProfileIntegrationTest {
         jdbc.update("DELETE FROM user_account WHERE id=10002");
         jdbc.update("DELETE FROM community WHERE id=10002");
         jdbc.update("UPDATE community SET status='ACTIVE' WHERE id=10001");
-        jdbc.update("UPDATE user_account SET role='COMMUNITY_OPERATOR',status='ACTIVE',community_id=10001 WHERE id=10001");
+        jdbc.update("UPDATE user_account SET role='COMMUNITY_OPERATOR',status='ACTIVE',community_id=10001,password_change_required=FALSE WHERE id=10001");
         jdbc.update("INSERT INTO community(id,name) VALUES(10002,'隔离测试社区')");
         jdbc.update("""
             INSERT INTO user_account(id,username,password_hash,display_name,role,community_id)
@@ -270,7 +275,7 @@ class ElderProfileIntegrationTest {
         try (var executor = Executors.newFixedThreadPool(2)) {
             Callable<String> task = () -> {
                 if (!gate.await(5,TimeUnit.SECONDS)) throw new IllegalStateException("等待并发测试启动超时");
-                return service.create(UsernamePasswordAuthenticationToken.authenticated("dev.operator",null,List.of()),input).id();
+                return service.create(AccountSessions.authentication(identities.find("dev.operator")),input).id();
             };
             var first = executor.submit(task); var second = executor.submit(task); gate.countDown();
             assertThat(first.get(15,TimeUnit.SECONDS)).isEqualTo(second.get(15,TimeUnit.SECONDS));
@@ -282,7 +287,7 @@ class ElderProfileIntegrationTest {
     @Test
     @DisplayName("并发修改同一版本时仅允许一个写入者成功")
     void concurrentUpdate() throws Exception {
-        var auth = UsernamePasswordAuthenticationToken.authenticated("dev.operator",null,List.of());
+        var auth = AccountSessions.authentication(identities.find("dev.operator"));
         var original = json.treeToValue(profile("张测试","13800138000"),ElderProfileData.class);
         long id = Long.parseLong(service.create(auth,new ElderRequests.Create(UUID.randomUUID(),original)).id());
         var gate = new CountDownLatch(1);

@@ -21,7 +21,7 @@ function guardUnload(event: BeforeUnloadEvent) {
 }
 
 // 会话失效必须立即卸载敏感页面；正常导航则遵循草稿关闭确认。
-onBeforeRouteLeave(() => !session.account || records.confirmDiscard())
+onBeforeRouteLeave(() => !session.account || session.account.passwordChangeRequired || records.confirmDiscard())
 onMounted(() => window.addEventListener('beforeunload', guardUnload))
 onBeforeUnmount(() => window.removeEventListener('beforeunload', guardUnload))
 </script>

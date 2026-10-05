@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.elderlycare.platform.identity.mapper.AdminBootstrapMapper">
+  <select id="communityExists" resultType="int">
+    SELECT COUNT(*) FROM community WHERE id = #{id}
+  </select>
+  <insert id="createCommunity">
+    INSERT INTO community(id, name) VALUES(#{id}, #{name})
+  </insert>
+  <select id="initialized" resultType="int">
+    SELECT (SELECT COUNT(*) FROM user_account WHERE community_id = #{communityId} AND role = 'PLATFORM_ADMIN')
+      + (SELECT COUNT(*) FROM admin_account_event WHERE community_id = #{communityId} AND action = 'BOOTSTRAPPED')
+  </select>
+</mapper>

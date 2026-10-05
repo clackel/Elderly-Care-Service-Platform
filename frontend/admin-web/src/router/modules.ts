@@ -1,4 +1,5 @@
 export const featureModules = [
+  { path: 'accounts', title: '后台账号管理', description: '本社区后台账号、角色与密码管理。' },
   { path: 'elders', title: '老人档案', description: '老人基础资料与社区归属。' },
   { path: 'health', title: '健康协助录入', description: '获授权老人及本人代录记录的维护。' },
   {
