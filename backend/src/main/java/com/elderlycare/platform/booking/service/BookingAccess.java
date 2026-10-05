@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Set;
+import java.util.Objects;
 
 @Service
 public class BookingAccess {
@@ -30,6 +31,8 @@ public class BookingAccess {
             throw error(HttpStatus.FORBIDDEN, "FORBIDDEN", "该账号无权访问养老服务预约");
         if (a.getCommunityId() == null || communities.findActiveById(a.getCommunityId()) == null)
             throw error(HttpStatus.FORBIDDEN, "COMMUNITY_UNAVAILABLE", "账号未分配有效社区，请联系社区人员");
+        if (a.isPasswordChangeRequired())
+            throw error(HttpStatus.FORBIDDEN, "PASSWORD_CHANGE_REQUIRED", "请先修改初始或重置密码");
         return a;
     }
     /** 核验本社区管理角色，平台管理员不豁免社区边界。 */
@@ -46,6 +49,19 @@ public class BookingAccess {
     public void lock(UserAccount a) {
         if (communities.lockActiveById(a.getCommunityId()) == null)
             throw error(HttpStatus.FORBIDDEN, "COMMUNITY_UNAVAILABLE", "所属社区不可用");
+    }
+    /** 写事务获取社区锁后重新核验身份、凭证和改密状态，禁止锁等待期间的旧权限继续写入。 */
+    public UserAccount writer(Authentication auth) {
+        var before = actor(auth); long communityId = before.getCommunityId(); Long actorId = before.getId();
+        lock(before);
+        var current = actor(auth);
+        if (current.getCommunityId() != communityId || !Objects.equals(current.getId(), actorId))
+            throw error(HttpStatus.UNAUTHORIZED, "SESSION_REVOKED", "账号身份已变更，请重新登录");
+        return current;
+    }
+    /** 锁后重新确认社区管理角色，平台管理员仍限定所属社区。 */
+    public UserAccount operatorWriter(Authentication auth) {
+        var actor = writer(auth); requireOperator(actor); return actor;
     }
     /** 校验老人对象及预约代办范围，授权撤销或到期立即拒绝。 */
     public void elder(UserAccount a, long id, boolean write) {
@@ -68,4 +84,3 @@ public class BookingAccess {
     /** 返回不包含敏感正文的业务异常。 */
     public static BusinessException error(HttpStatus status, String code, String message) { return new BusinessException(status, code, message); }
 }
-

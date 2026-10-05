@@ -15,6 +15,7 @@ public class UserAccount {
     private String status;
     private long version;
     private long credentialVersion;
+    private long notificationVersion;
     private boolean passwordChangeRequired;
 
     public Long getId() { return id; }
@@ -35,6 +36,8 @@ public class UserAccount {
     public void setVersion(long version) { this.version = version; }
     public long getCredentialVersion() { return credentialVersion; }
     public void setCredentialVersion(long credentialVersion) { this.credentialVersion = credentialVersion; }
+    public long getNotificationVersion() { return notificationVersion; }
+    public void setNotificationVersion(long notificationVersion) { this.notificationVersion = notificationVersion; }
     public boolean isPasswordChangeRequired() { return passwordChangeRequired; }
     public void setPasswordChangeRequired(boolean passwordChangeRequired) { this.passwordChangeRequired = passwordChangeRequired; }
 }

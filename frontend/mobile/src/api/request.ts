@@ -28,6 +28,8 @@ export function clearSession() {
   cookie = ''
   epoch++
 }
+/** 认证操作开始时作废先前请求，保留当前Cookie供本次恢复、登录或注销使用。 */
+export function invalidatePendingRequests() { epoch++ }
 /** 确定H5同源代理或微信已配置的HTTPS接口地址。 */
 function baseUrl(): string {
   let url = import.meta.env.VITE_API_BASE_URL || ''
@@ -109,9 +111,12 @@ function send<T>(path: string, options: Options = {}): Promise<T> {
 }
 /** 每次写入读取当前会话CSRF；登录后轮换的Cookie和凭证不会复用旧值。 */
 export async function request<T>(path: string, options: Options = {}): Promise<T> {
+  const generation = epoch
   if (options.method && options.method !== 'GET') {
     const csrf = await send<{ headerName: string; token: string }>('/auth/csrf')
+    if (generation !== epoch) throw new ApiError(401, '会话已变化，请重新发起操作')
     options = { ...options, headers: { ...options.headers, [csrf.headerName]: csrf.token } }
   }
+  if (generation !== epoch) throw new ApiError(401, '会话已变化，请重新发起操作')
   return send<T>(path, options)
 }

@@ -5,6 +5,7 @@ import { ApiError } from '../api/http'
 import { advanceSessionEpoch } from '../api/sessionEpoch'
 import type { CurrentAccount } from '../api/types'
 import { canAssistHealth as healthEntry } from '../../../shared/health'
+import { canViewAdminNotifications } from '../../../shared/notifications'
 
 const managementRoles = ['COMMUNITY_OPERATOR', 'DUTY_OFFICER', 'PLATFORM_ADMIN', 'AUDITOR']
 
@@ -25,6 +26,9 @@ export const useSessionStore = defineStore('session', () => {
   const canManageAccounts = computed(
     () => !!account.value?.communityId && account.value.role === 'PLATFORM_ADMIN',
   )
+  const canViewNotifications = computed(() => canViewAdminNotifications(
+    account.value?.role, account.value?.communityId, account.value?.passwordChangeRequired,
+  ))
 
   /** 清除身份并淘汰在途读取，避免注销后的迟到响应重新写回旧账号。 */
   function clear() {
@@ -83,5 +87,5 @@ export const useSessionStore = defineStore('session', () => {
     }
   }
 
-  return { account, initialized, canAccessAdmin, canManageElders, canAssistHealth, canManageAccounts, clear, restore, login, logout }
+  return { account, initialized, canAccessAdmin, canManageElders, canAssistHealth, canManageAccounts, canViewNotifications, clear, restore, login, logout }
 })

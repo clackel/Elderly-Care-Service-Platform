@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { onMounted, reactive } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { useSessionStore } from '../../stores/session'
+import { useBookingNavigationStore } from '../../stores/bookingNavigation'
 import { useBookings } from './useBookings'
 import BookingEditor from './BookingEditor.vue'
 import BookingTable from './BookingTable.vue'
@@ -10,6 +11,13 @@ import type { BookingStatus } from '../../api/bookings'
 import './bookings.css'
 const records = reactive(useBookings())
 const session = useSessionStore()
+const navigation = useBookingNavigationStore()
+
+// 消息或待办传来的编号只消费一次；详情读取仍执行服务端的社区及对象权限校验。
+onMounted(() => {
+  const bookingId = navigation.consume()
+  if (bookingId) void records.open(bookingId)
+})
 /** 切换状态时从第一页重新加载。 */
 function filter(value: BookingStatus | '') {
   records.status = value
@@ -47,6 +55,7 @@ onBeforeRouteLeave(
       >
     </header>
     <div v-if="records.error" class="booking-error" role="alert">{{ records.error }}</div>
+    <p v-if="records.detailLoading" class="booking-muted" role="status">正在读取预约详情与当前处理权限…</p>
     <BookingEditor
       v-if="records.creating"
       :services="records.services"

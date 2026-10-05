@@ -41,7 +41,7 @@ public class BookingConsentService {
     /** 社区核验后建立唯一账号档案绑定；解除保留历史，禁止静默替换绑定对象。 */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public BookingResponses.Binding bind(Authentication auth, BookingRequests.Binding input) {
-        var a = access.operator(auth); access.lock(a);
+        var a = access.operatorWriter(auth);
         var account = accounts.selectById(input.accountId());
         var elder = elders.find(a.getCommunityId(), input.elderId());
         if (account == null || !Objects.equals(account.getCommunityId(), a.getCommunityId())
@@ -77,10 +77,10 @@ public class BookingConsentService {
         var rows = grants.selectList(q.orderByDesc("id").last("LIMIT " + page.pageSize() + " OFFSET " + page.offset()));
         return new PageResponse<>(rows.stream().map(this::grantView).toList(), page.page(), page.pageSize(), total);
     }
-    /** 本人在线同意或社区核验明确同意依据后授予预约权限；家庭关系不自动产生权限。 */
+    /** 本人或经核验社区人员授予预约权限；撤销或到期后的新周期不恢复旧通知。 */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public BookingResponses.Grant grant(Authentication auth, BookingRequests.Grant input) {
-        var a = access.actor(auth); access.lock(a);
+        var a = access.writer(auth);
         if (!access.isOperator(a)) {
             if (!"ELDER".equals(a.getRole())) throw error(HttpStatus.FORBIDDEN, "FORBIDDEN", "仅老人本人或经核验的社区人员可以授予权限");
             access.elder(a, input.elderId(), false);
@@ -98,17 +98,20 @@ public class BookingConsentService {
         if (create) {
             version(0, input.version()); row = new GrantRow(); row.id = IdWorker.getId(); row.communityId = a.getCommunityId();
             row.elderId = input.elderId(); row.familyId = input.familyId(); row.version = 0L;
-        } else { version(row.version, input.version()); row.version++; }
+        } else {
+            version(row.version, input.version()); row.version++;
+            if (row.revoked || !row.expiresAt.isAfter(Instant.now())) row.notificationEpoch++;
+        }
         row.canBook = input.canBook(); row.expiresAt = input.expiresAt(); row.revoked = false; row.grantedBy = a.getId();
         row.evidenceCipher = crypto.encrypt("grant", row.communityId, row.id, access.isOperator(a) ? input.consentReference().strip() : "老人本人在线明确同意");
         if (create) grants.insert(row); else grants.updateById(row);
         access.audit(a, row.id, "BOOKING_GRANT");
         return grantView(row);
     }
-    /** 本人、获授权家属或社区撤销授权；已有预约保留，后续家属访问立即被阻止。 */
+    /** 本人、获授权家属或社区撤销授权并推进通知周期；已有预约保留，旧消息不再恢复。 */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public BookingResponses.Grant revoke(Authentication auth, long id, long expected) {
-        var a = access.actor(auth); access.lock(a);
+        var a = access.writer(auth);
         var row = grants.selectById(id);
         if (row == null || !Objects.equals(row.communityId, a.getCommunityId())) throw missing();
         if (!access.isOperator(a)) {
@@ -117,7 +120,8 @@ public class BookingConsentService {
         }
         version(row.version, expected);
         if (row.revoked) throw conflict("GRANT_REVOKED", "该授权已经撤销");
-        row.revoked = true; row.version++; grants.updateById(row); access.audit(a, id, "BOOKING_GRANT_REVOKE");
+        row.revoked = true; row.version++; row.notificationEpoch++;
+        grants.updateById(row); access.audit(a, id, "BOOKING_GRANT_REVOKE");
         return grantView(row);
     }
     /** 输出绑定状态与版本，不输出核验依据。 */

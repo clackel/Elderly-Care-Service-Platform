@@ -21,7 +21,9 @@ export const router = createRouter({
         ...featureModules.map((module) => ({
           path: module.path,
           component:
-            module.path === 'accounts'
+            module.path === 'notifications'
+              ? () => import('../views/NotificationsView.vue')
+              : module.path === 'accounts'
               ? () => import('../views/AdminAccountsView.vue')
               : module.path === 'health'
               ? () => import('../views/HealthView.vue')
@@ -39,6 +41,7 @@ export const router = createRouter({
             description: module.description,
             requiresHealthAssist: module.path === 'health',
             requiresAccountAdmin: module.path === 'accounts',
+            requiresNotifications: module.path === 'notifications',
             requiresElderAccess: [
               'elders',
               'services',
@@ -73,6 +76,7 @@ router.beforeEach(async (to) => {
   if (to.meta.requiresElderAccess && !session.canManageElders) return '/forbidden'
   if (to.meta.requiresHealthAssist && !session.canAssistHealth) return '/forbidden'
   if (to.meta.requiresAccountAdmin && !session.canManageAccounts) return '/forbidden'
+  if (to.meta.requiresNotifications && !session.canViewNotifications) return '/forbidden'
   return true
 })
 

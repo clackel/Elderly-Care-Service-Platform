@@ -102,7 +102,10 @@ public class AdminAccountService {
         boolean revokeAssistance = "COMMUNITY_OPERATOR".equals(account.getRole())
                 && (!"COMMUNITY_OPERATOR".equals(role) || (statusChanged && "DISABLED".equals(status)));
         account.setDisplayName(name); account.setRole(role); account.setStatus(status);
-        if (roleChanged || statusChanged) account.setCredentialVersion(account.getCredentialVersion() + 1);
+        if (roleChanged || statusChanged) {
+            account.setCredentialVersion(account.getCredentialVersion() + 1);
+            account.setNotificationVersion(account.getNotificationVersion() + 1);
+        }
         advance(account, input.version());
         if (revokeAssistance && queries.revokeAssistance(actor.getCommunityId(), account.getId(), actor.getId(), Instant.now()) > 0)
             event(actor, account, "ASSISTANCE_REVOKED");

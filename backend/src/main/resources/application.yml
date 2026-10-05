@@ -22,6 +22,11 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:elderly_care}
     password: ${RABBITMQ_PASSWORD}
+    connection-timeout: 3s
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
 server:
   port: ${SERVER_PORT:8080}
   servlet:
@@ -57,6 +62,9 @@ springdoc:
   swagger-ui:
     enabled: false
 app:
+  notification:
+    enabled: ${NOTIFICATIONS_ENABLED:true}
+    dispatch-delay-ms: 5000
   bootstrap:
     enabled: ${APP_BOOTSTRAP_ENABLED:false}
     community-id: ${APP_BOOTSTRAP_COMMUNITY_ID:0}

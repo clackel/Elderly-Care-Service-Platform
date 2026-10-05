@@ -4,15 +4,19 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { featureModules } from '../router/modules'
 import { useSessionStore } from '../stores/session'
+import { useNotificationOverview } from './notifications/useNotificationOverview'
 
 const route = useRoute()
 const router = useRouter()
 const session = useSessionStore()
+const notifications = useNotificationOverview()
 const loggingOut = ref(false)
 const visibleModules = computed(() =>
   featureModules.filter(
     (module) =>
-      module.path === 'accounts'
+      module.path === 'notifications'
+        ? session.canViewNotifications
+        : module.path === 'accounts'
         ? session.canManageAccounts
         : module.path === 'health'
         ? session.canAssistHealth
@@ -51,7 +55,7 @@ async function logout() {
           :to="'/' + module.path"
           class="nav-item"
           active-class="active"
-          >{{ module.title }}</RouterLink
+          >{{ module.title }}<span v-if="module.path === 'notifications' && notifications.unread && notifications.unread > 0" class="notification-nav-count" :aria-label="notifications.unread + '条未读消息'">{{ notifications.unread > 99 ? '99+' : notifications.unread }}</span></RouterLink
         >
       </nav>
       <div class="sidebar-foot">基础框架 · v0.1.0</div>
@@ -71,3 +75,7 @@ async function logout() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.notification-nav-count { display: inline-block; margin-left: 8px; padding: 2px 6px; border-radius: 10px; color: #fff; background: #a84d35; font-size: 11px; line-height: 1.3; }
+</style>

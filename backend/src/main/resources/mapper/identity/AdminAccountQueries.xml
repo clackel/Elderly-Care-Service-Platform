@@ -25,7 +25,8 @@
   <update id="update">
     UPDATE user_account SET display_name = #{account.displayName}, role = #{account.role}, status = #{account.status},
       password_hash = #{account.passwordHash}, password_change_required = #{account.passwordChangeRequired},
-      credential_version = #{account.credentialVersion}, version = #{account.version}, updated_at = #{now}
+      credential_version = #{account.credentialVersion}, notification_version = #{account.notificationVersion},
+      version = #{account.version}, updated_at = #{now}
     WHERE id = #{account.id} AND community_id = #{account.communityId} AND version = #{expected}
   </update>
   <update id="revokeAssistance">
