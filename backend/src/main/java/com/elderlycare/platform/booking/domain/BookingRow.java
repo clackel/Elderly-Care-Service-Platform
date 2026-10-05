@@ -33,6 +33,8 @@ public class BookingRow {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     public Long workerId;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    public long assignmentVersion;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     public String status;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     public Long version;
@@ -49,4 +51,3 @@ public class BookingRow {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     public Instant updatedAt;
 }
-

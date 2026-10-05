@@ -2,7 +2,7 @@
 
 ## 1. 工程边界
 
-当前实现包括工程基础、后台账号密码认证与管理、角色与社区验证、老人档案、服务目录、预约与人工安排、履约、本人绑定、预约专用家属授权、微信登录，以及四类手工健康测量和独立健康授权。数据库结构以 V1—V5 Flyway 迁移、[后台账号接口](ADMIN_ACCOUNTS_API.md)、[预约接口](SERVICE_BOOKING_API.md)及[健康接口](HEALTH_API.md)为准；设备、医疗附件、求助投递和短信仍为规划能力。
+当前实现包括工程基础、后台账号密码认证与管理、角色与社区验证、老人档案、服务目录、预约与人工安排、履约、本人绑定、预约专用家属授权、微信登录、四类手工健康测量和独立健康授权，以及预约站内消息与待办。数据库结构以 V1—V6 Flyway 迁移、[后台账号接口](ADMIN_ACCOUNTS_API.md)、[预约接口](SERVICE_BOOKING_API.md)、[健康接口](HEALTH_API.md)及[通知接口](NOTIFICATIONS_API.md)为准；设备、医疗附件、求助投递、短信和微信订阅消息仍为规划能力。
 
 工程标识：`elderly-care-service-platform`；Java 根包：`com.elderlycare.platform`。用户界面采用“社区养老服务平台”，不使用尚未确认的品牌名。
 
@@ -61,9 +61,11 @@ Flyway 迁移位于 `backend/src/main/resources/db/migration/`；已发布迁移
 
 健康入口采用独立功能组件和 useHealthRecords；两端共享 frontend/shared/health.ts 及 healthApi.ts 的纯 TypeScript 字段、时间和接口语义。健康视图隐藏或退出时卸载正文，返回前台重新核验身份及授权；未知写入结果保留原载荷与 requestId，重试成功后同样清理撤销授权涉及的内容。
 
+通知两端共用 `frontend/shared/notifications.ts` 的类型、动作标题和时间规则，标题只使用固定泛化模板。移动端在“我的”进入独立消息页，隐藏时卸载消息及待办，返回前台重新恢复身份。消息打开预约只使用绑定账号的一次性内存编号，由服务页重新取得当前详情；禁止将通知列表、业务资料或导航目标放入 URL 和持久化存储。
+
 ## 6. 基础设施与环境
 
-`dev`：H2 文件库、进程内会话、无 Redis/RabbitMQ 连接需求，仅监听回环地址；手动提供 `APP_DEV_PASSWORD`。
+`dev`：H2 文件库、进程内会话、无 Redis 连接需求，仅监听回环地址；手动提供 `APP_DEV_PASSWORD` 及 RabbitMQ 连接配置。通知投递依赖真实 RabbitMQ，不使用内存消息替代；配置和失败处理见[通知接口](NOTIFICATIONS_API.md)。
 
 本机 MySQL 测试需手动激活 `dev,local`。将 `backend/config/application-local.yml.example` 复制为同目录的 `application-local.yml`，在文件中覆盖数据源 URL、账号、密码及 MySQL 驱动，并提供 `app.dev-password`。以 `backend` 为工作目录，执行 `mvn spring-boot:run '-Dspring-boot.run.profiles=dev,local'`；IDE 调试使用相同工作目录和 Active profiles。Spring Boot 从外部 `config/` 目录加载配置；只启用 dev 不会加载 local 文件。实际文件被 Git 忽略且不进入 JAR。环境变量仍优先于文件，已有数据库必须沿用原加密密钥。此方式保留开发账号初始化及进程内会话，仅用于本机合成数据测试；配置登录密码仅初始化新账号，不重置已有账号密码。
 
@@ -82,7 +84,7 @@ docker compose up -d
 
 Compose 使用固定镜像版本，端口仅映射回环地址，数据通过命名卷保存。Nginx 文件只是路由示例；非 dev 使用 HTTPS 并保留 Secure Cookie。后台登录限流为单实例内存计数，多实例或代理部署需在可信入口统一限制。大创阶段未实现 MFA，真实社区部署另行确定运营和接入范围。
 
-微信 AppID/AppSecret 用于真实小程序身份交换；缺少配置时关闭登录能力。小程序复用服务器会话及 CSRF，Cookie 只保存在运行内存。对象存储和通知字段仍为预留，短信和消息投递尚未实现。预约规则、开通码及部署要求见[预约接口](SERVICE_BOOKING_API.md)。
+微信 AppID/AppSecret 用于真实小程序身份交换；缺少配置时关闭登录能力。小程序复用服务器会话及 CSRF，Cookie 只保存在运行内存。RabbitMQ 负责预约站内通知投递；对象存储和外部通知供应商字段仍为预留，短信、电话和微信订阅消息尚未接入。预约规则、开通码及部署要求见[预约接口](SERVICE_BOOKING_API.md)。
 
 ## 7. 提交检查
 

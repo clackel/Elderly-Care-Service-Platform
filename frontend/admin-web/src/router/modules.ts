@@ -1,4 +1,5 @@
 export const featureModules = [
+  { path: 'notifications', title: '消息与待办', description: '预约变化提醒、本社区业务待办与发送异常。' },
   { path: 'accounts', title: '后台账号管理', description: '本社区后台账号、角色与密码管理。' },
   { path: 'elders', title: '老人档案', description: '老人基础资料与社区归属。' },
   { path: 'health', title: '健康协助录入', description: '获授权老人及本人代录记录的维护。' },

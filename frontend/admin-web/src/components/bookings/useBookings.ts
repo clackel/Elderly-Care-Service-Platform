@@ -35,6 +35,7 @@ export function useBookings() {
   const historyPage = ref(1),
     historyTotal = ref(0),
     busy = ref(false),
+    detailLoading = ref(false),
     loading = ref(false),
     error = ref(''),
     creating = ref(false),
@@ -75,6 +76,7 @@ export function useBookings() {
     detailRead?.abort()
     const controller = new AbortController()
     detailRead = controller
+    detailLoading.value = true
     detail.value = null
     history.value = []
     error.value = ''
@@ -91,6 +93,8 @@ export function useBookings() {
       }
     } catch (e) {
       if (!controller.signal.aborted && alive) error.value = failure(e)
+    } finally {
+      if (!controller.signal.aborted && alive) detailLoading.value = false
     }
   }
   /** 成功写入后刷新状态；版本冲突重新读取，网络不确定时保留原申请供幂等重试。 */
@@ -169,6 +173,7 @@ export function useBookings() {
   /** 安全清理详情面板及未完成读取。 */
   function closeDetail() {
     detailRead?.abort()
+    detailLoading.value = false
     detail.value = null
     history.value = []
   }
@@ -197,6 +202,7 @@ export function useBookings() {
     historyPage,
     historyTotal,
     busy,
+    detailLoading,
     loading,
     error,
     creating,

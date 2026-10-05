@@ -5,6 +5,7 @@ import { roleLabels } from '../api/roles'
 import type { Community } from '../api/types'
 import { featureModules } from '../router/modules'
 import { useSessionStore } from '../stores/session'
+import NotificationSummary from '../components/notifications/NotificationSummary.vue'
 
 const session = useSessionStore()
 const community = ref<Community | null>(null)
@@ -13,7 +14,9 @@ const errorMessage = ref('')
 const visibleModules = computed(() =>
   featureModules.filter(
     (module) =>
-      module.path === 'accounts'
+      module.path === 'notifications'
+        ? session.canViewNotifications
+        : module.path === 'accounts'
         ? session.canManageAccounts
         : module.path === 'health'
         ? session.canAssistHealth
@@ -61,6 +64,7 @@ onMounted(loadCommunity)
   <el-alert v-if="errorMessage" :title="errorMessage" type="error" :closable="false"
     ><el-button @click="loadCommunity">重新加载</el-button></el-alert
   >
+  <NotificationSummary v-if="session.canViewNotifications" />
   <section class="section-heading">
     <h2>功能入口</h2>
     <span class="muted">按当前账号权限展示</span>
@@ -77,7 +81,7 @@ onMounted(loadCommunity)
       <p>{{ module.description }}</p>
       <span class="module-status"
         >{{
-          ['accounts', 'elders', 'health', 'services', 'consent', 'bookings', 'fulfillment'].includes(module.path)
+          ['notifications', 'accounts', 'elders', 'health', 'services', 'consent', 'bookings', 'fulfillment'].includes(module.path)
             ? '进入管理'
             : '页面已预留'
         }}

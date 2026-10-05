@@ -23,8 +23,9 @@ public class GrantRow {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     public Long version;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    public long notificationEpoch;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     public Long grantedBy;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     public String evidenceCipher;
 }
-

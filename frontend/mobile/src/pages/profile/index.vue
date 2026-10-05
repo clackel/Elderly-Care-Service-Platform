@@ -13,10 +13,13 @@ const preferences = usePreferencesStore(),
 onShow(() => {
   visit.value++
 })
+/** 打开独立消息页，身份和授权由目标页重新核验。 */
+function notifications() { uni.navigateTo({ url: '/pages/notifications/index' }) }
 </script>
 <template>
   <PageFrame title="我的" subtitle="账号、预约授权与使用设置">
     <MobileAccountPanel />
+    <button v-if="session.account" class="feature-button" @click="notifications">消息与待办</button>
     <MobileGrants
       v-if="session.account && session.account.role !== 'STAFF'"
       :key="session.account.id + ':' + visit"

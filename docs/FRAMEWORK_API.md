@@ -1,6 +1,6 @@
 # 基础框架接口
 
-本文记录已实现的基础框架接口。后台账号与密码维护见[后台账号接口](ADMIN_ACCOUNTS_API.md)，老人档案见[老人档案接口](ELDER_API.md)，服务预约、微信开通及预约授权见[预约接口](SERVICE_BOOKING_API.md)，独立健康域见[健康接口](HEALTH_API.md)；其他规划能力见[业务系统设计](SYSTEM_DESIGN.md#7-接口契约)。
+本文记录已实现的基础框架接口。后台账号与密码维护见[后台账号接口](ADMIN_ACCOUNTS_API.md)，老人档案见[老人档案接口](ELDER_API.md)，服务预约、微信开通及预约授权见[预约接口](SERVICE_BOOKING_API.md)，独立健康域见[健康接口](HEALTH_API.md)，站内消息、待办及投递失败处理见[通知接口](NOTIFICATIONS_API.md)；其他规划能力见[业务系统设计](SYSTEM_DESIGN.md#7-接口契约)。
 
 | 方法 | 路径 | 当前行为 |
 |---|---|---|

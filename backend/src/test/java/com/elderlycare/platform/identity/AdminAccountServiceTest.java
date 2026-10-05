@@ -51,6 +51,7 @@ class AdminAccountServiceTest {
         verify(queries).revokeAssistance(eq(9L), eq(2L), eq(1L), any());
         service.update(authentication, 2, update(1, "COMMUNITY_OPERATOR", "ACTIVE"));
         assertThat(target.getCredentialVersion()).isEqualTo(2);
+        assertThat(target.getNotificationVersion()).isEqualTo(2);
         verify(queries, times(1)).revokeAssistance(anyLong(), anyLong(), anyLong(), any());
         assertThatThrownBy(() -> AccountSessions.requireCurrent(oldSession, target)).isInstanceOf(BusinessException.class);
     }
@@ -60,9 +61,11 @@ class AdminAccountServiceTest {
         var target = account(2L, "COMMUNITY_OPERATOR"); when(queries.target(9L, 2L)).thenReturn(target);
         service.update(authentication, 2, new AdminAccountRequests.Update(UUID.randomUUID(), 0L, "新的合成名称", "COMMUNITY_OPERATOR", "ACTIVE"));
         assertThat(target.getCredentialVersion()).isZero();
+        assertThat(target.getNotificationVersion()).isZero();
         verify(queries, never()).revokeAssistance(anyLong(), anyLong(), anyLong(), any());
         service.update(authentication, 2, update(1, "AUDITOR", "ACTIVE"));
         assertThat(target.getCredentialVersion()).isEqualTo(1);
+        assertThat(target.getNotificationVersion()).isEqualTo(1);
         verify(queries).revokeAssistance(eq(9L), eq(2L), eq(1L), any());
     }
 
@@ -133,6 +136,7 @@ class AdminAccountServiceTest {
         when(passwords.encode("NewSynthetic2026")).thenReturn("new-synthetic-hash");
         service.changePassword(authentication, input);
         assertThat(admin.isPasswordChangeRequired()).isFalse(); assertThat(admin.getCredentialVersion()).isEqualTo(1);
+        assertThat(admin.getNotificationVersion()).isZero();
         assertThatThrownBy(() -> AccountSessions.requireCurrent(authentication, admin)).isInstanceOf(BusinessException.class);
     }
 
@@ -143,6 +147,7 @@ class AdminAccountServiceTest {
         var input = new AdminAccountRequests.ResetPassword(UUID.randomUUID(), 0L, "NewSynthetic2026");
         var result = service.resetPassword(authentication, 2, input);
         assertThat(target.isPasswordChangeRequired()).isTrue(); assertThat(target.getCredentialVersion()).isEqualTo(1);
+        assertThat(target.getNotificationVersion()).isZero();
         var stored = new AdminAccountMutationRow(); stored.requestHash = "synthetic-hmac"; stored.resultId = 2L; stored.resultVersion = 1L;
         when(mutations.selectOne(any())).thenReturn(stored);
         assertThat(service.resetPassword(authentication, 2, input)).isEqualTo(result);

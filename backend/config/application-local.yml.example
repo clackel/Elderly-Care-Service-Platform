@@ -6,6 +6,11 @@ spring:
     username: 'elderly_care'
     password: '' # 填写本机 MySQL 密码。
     driver-class-name: com.mysql.cj.jdbc.Driver
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: elderly_care
+    password: '' # 填写本机 RabbitMQ 密码；站内通知需要连接队列。
 
 server:
   port: 8080 # 修改后需同步修改前端 Vite 代理端口。
@@ -25,4 +30,5 @@ app:
   #   encryption-key: '32 个随机字节的 Base64 编码'
 
 # YAML 单引号中的单引号需写成两个单引号，例如 'abc''def'。
-# dev 使用进程内会话，当前本地测试无需配置 Redis、RabbitMQ、微信或对象存储。
+# dev 使用进程内会话，无需 Redis、微信或对象存储；站内通知使用 RabbitMQ。
+# 如仅调试其他模块，可显式设置 NOTIFICATIONS_ENABLED=false 暂停通知投递；事件仍会保留待发送。

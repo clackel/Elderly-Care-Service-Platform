@@ -1,7 +1,7 @@
 /**
- * 通知与重试模块的命名空间。
+ * 站内通知、预约待办及可靠投递模块。
  *
- * <p>当前仅预留模块边界；业务规则、数据表及外部服务尚未实现。
- * 后续按 api、service、mapper、domain 分层，事务置于 Service，跨模块通过 Service 协作。
+ * <p>预约事件同事务保存发件箱及接收权限快照，消费及展示时重新检查授权；
+ * 待办从预约当前状态派生。事务置于 Service，通知不复制个人资料或事件正文。
  */
 package com.elderlycare.platform.notification;

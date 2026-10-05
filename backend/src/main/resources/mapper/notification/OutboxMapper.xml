@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.elderlycare.platform.notification.mapper.OutboxMapper">
+  <sql id="dueState">
+    ((status = 'READY' AND next_attempt_at &lt;= #{now})
+     OR (status = 'IN_FLIGHT' AND lease_until &lt;= #{now}))
+  </sql>
+  <select id="due" resultType="com.elderlycare.platform.notification.domain.OutboxRow">
+    SELECT * FROM notification_outbox WHERE <include refid="dueState"/>
+    ORDER BY next_attempt_at, event_id LIMIT #{limit}
+  </select>
+  <update id="claim">
+    UPDATE notification_outbox SET status = 'IN_FLIGHT', attempts = attempts + 1,
+      claim_token = #{token}, lease_until = #{until}, version = version + 1, error_code = NULL
+    WHERE event_id = #{id} AND version = #{version} AND attempts &lt; #{maxAttempts} AND <include refid="dueState"/>
+  </update>
+  <update id="exhausted">
+    UPDATE notification_outbox SET status = 'FAILED', claim_token = NULL, lease_until = NULL,
+      error_code = 'DELIVERY_TIMEOUT', version = version + 1
+    WHERE event_id = #{id} AND version = #{version} AND <include refid="dueState"/>
+  </update>
+  <update id="failed">
+    UPDATE notification_outbox SET status = #{status}, next_attempt_at = #{next}, error_code = #{code},
+      claim_token = NULL, lease_until = NULL, version = version + 1
+    WHERE event_id = #{id} AND status = 'IN_FLIGHT' AND claim_token = #{token}
+  </update>
+  <select id="failures" resultType="com.elderlycare.platform.notification.domain.OutboxRow">
+    SELECT * FROM notification_outbox WHERE community_id = #{communityId} AND status = 'FAILED'
+    ORDER BY occurred_at DESC, event_id DESC LIMIT #{limit} OFFSET #{offset}
+  </select>
+  <select id="failureCount" resultType="long">
+    SELECT COUNT(*) FROM notification_outbox WHERE community_id = #{communityId} AND status = 'FAILED'
+  </select>
+  <select id="lockFailure" resultType="com.elderlycare.platform.notification.domain.OutboxRow">
+    SELECT * FROM notification_outbox WHERE community_id = #{communityId} AND event_id = #{id} FOR UPDATE
+  </select>
+  <update id="retry">
+    UPDATE notification_outbox SET status = 'READY', attempts = 0, next_attempt_at = #{now},
+      claim_token = NULL, lease_until = NULL, error_code = NULL, version = version + 1
+    WHERE community_id = #{communityId} AND event_id = #{id} AND version = #{version} AND status = 'FAILED'
+  </update>
+</mapper>

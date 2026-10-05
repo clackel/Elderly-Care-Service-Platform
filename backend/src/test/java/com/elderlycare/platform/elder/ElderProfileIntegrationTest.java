@@ -35,6 +35,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+        "app.notification.enabled=false",
         "spring.datasource.url=${ELDER_TEST_DB_URL:jdbc:h2:mem:elders;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1}",
         "spring.datasource.username=${ELDER_TEST_DB_USERNAME:sa}",
         "spring.datasource.password=${ELDER_TEST_DB_PASSWORD:}",

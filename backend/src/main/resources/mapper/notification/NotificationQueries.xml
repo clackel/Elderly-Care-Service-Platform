@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.elderlycare.platform.notification.mapper.NotificationQueries">
+  <insert id="insertOutbox">
+    INSERT INTO notification_outbox(event_id, community_id, booking_id, action, occurred_at, status, attempts, next_attempt_at, version)
+    VALUES(#{row.eventId}, #{row.communityId}, #{row.bookingId}, #{row.action}, #{row.occurredAt}, 'READY', 0, #{row.occurredAt}, 0)
+  </insert>
+  <select id="snapshots" resultType="com.elderlycare.platform.notification.domain.RecipientRow">
+    SELECT a.id AS account_id, a.community_id, a.role AS recipient_role, a.notification_version,
+      eb.id AS binding_id, eb.version AS binding_version, g.id AS grant_id, g.notification_epoch AS grant_epoch,
+      CASE WHEN a.role = 'STAFF' THEN #{assignmentVersion} ELSE NULL END AS assignment_version
+    FROM user_account a
+    LEFT JOIN elder_account_binding eb ON a.role = 'ELDER' AND eb.account_id = a.id
+      AND eb.elder_id = #{elderId} AND eb.community_id = #{communityId} AND eb.active = TRUE
+    LEFT JOIN booking_grant g ON a.role = 'FAMILY' AND g.family_id = a.id AND g.elder_id = #{elderId}
+      AND g.community_id = #{communityId} AND g.revoked = FALSE AND g.expires_at &gt; #{now}
+    LEFT JOIN service_worker w ON a.role = 'STAFF' AND w.id = a.id AND w.community_id = #{communityId} AND w.enabled = TRUE
+    WHERE a.community_id = #{communityId} AND a.status = 'ACTIVE' AND a.id != #{actorId}
+      AND (a.role IN ('COMMUNITY_OPERATOR','PLATFORM_ADMIN') OR (a.role = 'ELDER' AND eb.id IS NOT NULL)
+        OR (a.role = 'FAMILY' AND g.id IS NOT NULL) OR (a.role = 'STAFF' AND a.id = #{workerId} AND w.id IS NOT NULL))
+  </select>
+  <select id="transferred" resultType="com.elderlycare.platform.notification.domain.RecipientRow">
+    SELECT id AS account_id, community_id, role AS recipient_role, notification_version
+    FROM user_account WHERE id = #{accountId} AND community_id = #{communityId} AND role = 'STAFF' AND status = 'ACTIVE'
+  </select>
+  <insert id="insertRecipient">
+    INSERT INTO notification_recipient(event_id, account_id, community_id, action, recipient_role, notification_version,
+      binding_id, binding_version, grant_id, grant_epoch, assignment_version)
+    VALUES(#{row.eventId}, #{row.accountId}, #{row.communityId}, #{row.action}, #{row.recipientRole}, #{row.notificationVersion},
+      #{row.bindingId}, #{row.bindingVersion}, #{row.grantId}, #{row.grantEpoch}, #{row.assignmentVersion})
+  </insert>
+  <select id="outbox" resultType="com.elderlycare.platform.notification.domain.OutboxRow">
+    SELECT * FROM notification_outbox WHERE event_id = #{eventId}
+  </select>
+  <select id="lockOutbox" resultType="com.elderlycare.platform.notification.domain.OutboxRow">
+    SELECT * FROM notification_outbox WHERE event_id = #{eventId} FOR UPDATE
+  </select>
+  <sql id="recipientJoins">
+    notification_recipient r
+    JOIN notification_outbox o ON o.event_id = r.event_id AND o.community_id = r.community_id
+    JOIN service_booking b ON b.id = o.booking_id AND b.community_id = o.community_id
+    JOIN user_account a ON a.id = r.account_id AND a.community_id = r.community_id
+    JOIN community c ON c.id = r.community_id
+  </sql>
+  <sql id="effectiveRecipient">
+    a.status = 'ACTIVE' AND c.status = 'ACTIVE' AND a.role = r.recipient_role AND a.notification_version = r.notification_version
+    AND (
+      (r.action = 'TASK_TRANSFERRED' AND a.role = 'STAFF')
+      OR (r.action != 'TASK_TRANSFERRED' AND (
+        a.role IN ('COMMUNITY_OPERATOR','PLATFORM_ADMIN')
+        OR (a.role = 'ELDER' AND EXISTS (SELECT 1 FROM elder_account_binding eb
+          WHERE eb.id = r.binding_id AND eb.version = r.binding_version AND eb.active = TRUE
+            AND eb.account_id = a.id AND eb.elder_id = b.elder_id AND eb.community_id = b.community_id))
+        OR (a.role = 'FAMILY' AND EXISTS (SELECT 1 FROM booking_grant g
+          WHERE g.id = r.grant_id AND g.notification_epoch = r.grant_epoch AND g.family_id = a.id
+            AND g.elder_id = b.elder_id AND g.community_id = b.community_id AND g.revoked = FALSE AND g.expires_at &gt; #{now}))
+        OR (a.role = 'STAFF' AND b.worker_id = a.id AND b.assignment_version = r.assignment_version
+          AND EXISTS (SELECT 1 FROM service_worker w WHERE w.id = a.id AND w.community_id = b.community_id AND w.enabled = TRUE))
+      ))
+    )
+  </sql>
+  <select id="deliverable" resultType="com.elderlycare.platform.notification.domain.RecipientRow">
+    SELECT r.* FROM <include refid="recipientJoins"/>
+    WHERE r.event_id = #{eventId} AND <include refid="effectiveRecipient"/>
+  </select>
+  <select id="messageId" resultType="long">
+    SELECT id FROM notification_message WHERE event_id = #{eventId} AND account_id = #{accountId}
+  </select>
+  <insert id="insertMessage">
+    INSERT INTO notification_message(id, event_id, account_id, community_id, created_at)
+    VALUES(#{id}, #{eventId}, #{accountId}, #{communityId}, #{now})
+  </insert>
+  <update id="delivered">
+    UPDATE notification_outbox SET status = 'DELIVERED', lease_until = NULL, claim_token = NULL, error_code = NULL, version = version + 1
+    WHERE event_id = #{eventId} AND status != 'DELIVERED'
+  </update>
+  <sql id="messageJoins">
+    <include refid="recipientJoins"/>
+    JOIN notification_message m ON m.event_id = r.event_id AND m.account_id = r.account_id AND m.community_id = r.community_id
+  </sql>
+  <sql id="messagePermission">
+    m.account_id = #{actor.id} AND m.community_id = #{actor.communityId} AND <include refid="effectiveRecipient"/>
+  </sql>
+  <sql id="messageFields">
+    m.id, r.action, CASE WHEN r.action = 'TASK_TRANSFERRED' THEN NULL ELSE o.booking_id END AS booking_id, o.occurred_at, m.read_at
+  </sql>
+  <select id="list" resultType="com.elderlycare.platform.notification.domain.MessageRow">
+    SELECT <include refid="messageFields"/> FROM <include refid="messageJoins"/>
+    WHERE <include refid="messagePermission"/>
+    <if test="unreadOnly">AND m.read_at IS NULL</if>
+    ORDER BY o.occurred_at DESC, m.id DESC LIMIT #{limit} OFFSET #{offset}
+  </select>
+  <select id="count" resultType="long">
+    SELECT COUNT(*) FROM <include refid="messageJoins"/> WHERE <include refid="messagePermission"/>
+    <if test="unreadOnly">AND m.read_at IS NULL</if>
+  </select>
+  <select id="visible" resultType="com.elderlycare.platform.notification.domain.MessageRow">
+    SELECT <include refid="messageFields"/> FROM <include refid="messageJoins"/>
+    WHERE m.id = #{id} AND <include refid="messagePermission"/>
+  </select>
+  <update id="markRead">
+    UPDATE notification_message SET read_at = #{now}
+    WHERE id = #{id} AND community_id = #{actor.communityId} AND account_id = #{actor.id} AND read_at IS NULL
+  </update>
+  <sql id="todoProjection">
+    SELECT b.id AS booking_id, b.status, b.scheduled_start, b.scheduled_end, b.has_exception,
+      CASE WHEN b.scheduled_end &lt;= #{now} THEN TRUE ELSE FALSE END AS overdue,
+      <choose>
+        <when test="actor.role == 'STAFF'">CASE WHEN b.status = 'CONFIRMED' THEN 'WAITING_START' ELSE 'IN_PROGRESS' END</when>
+        <otherwise>CASE WHEN b.has_exception = TRUE THEN 'EXCEPTION'
+          WHEN b.status IN ('CONFIRMED','IN_PROGRESS') AND b.scheduled_end &lt;= #{now} THEN 'OVERDUE'
+          ELSE 'PENDING_CONFIRMATION' END</otherwise>
+      </choose> AS todo_type
+    FROM service_booking b WHERE <include refid="com.elderlycare.platform.booking.mapper.BookingQueries.bookingPermission"/>
+    <choose>
+      <when test="actor.role == 'STAFF'">AND b.status IN ('CONFIRMED','IN_PROGRESS')</when>
+      <when test="actor.role == 'COMMUNITY_OPERATOR' or actor.role == 'PLATFORM_ADMIN'">
+        AND (b.status = 'PENDING' OR (b.status IN ('CONFIRMED','IN_PROGRESS') AND (b.has_exception = TRUE OR b.scheduled_end &lt;= #{now})))
+      </when>
+      <otherwise>AND 1 = 0</otherwise>
+    </choose>
+  </sql>
+  <select id="todos" resultType="com.elderlycare.platform.notification.domain.TodoRow">
+    SELECT t.* FROM (<include refid="todoProjection"/>) t
+    <if test="type != null">WHERE t.todo_type = #{type}</if>
+    ORDER BY CASE WHEN t.todo_type = 'EXCEPTION' THEN 0 WHEN t.overdue = TRUE THEN 1 ELSE 2 END,
+      t.scheduled_start, t.booking_id LIMIT #{limit} OFFSET #{offset}
+  </select>
+  <select id="todoCount" resultType="long">
+    SELECT COUNT(*) FROM (<include refid="todoProjection"/>) t
+    <if test="type != null">WHERE t.todo_type = #{type}</if>
+  </select>
+</mapper>

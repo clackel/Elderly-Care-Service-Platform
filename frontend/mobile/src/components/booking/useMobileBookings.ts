@@ -1,5 +1,6 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useSessionStore } from '../../stores/session'
+import { useBookingNavigationStore } from '../../stores/bookingNavigation'
 import { ApiError } from '../../api/request'
 import {
   catalogPage,
@@ -194,7 +195,14 @@ export function useMobileBookings() {
     events.value = []
     void load()
   }
-  onMounted(load)
+  /** 消费消息页传来的单次内存目标，重新读取详情而不依赖通知中的历史权限。 */
+  onMounted(() => {
+    const id = owner ? useBookingNavigationStore().consume(owner) : null
+    if (id) {
+      mode.value = 'bookings'
+      void open(id)
+    } else void load()
+  })
   onBeforeUnmount(() => {
     alive = false
     generation++

@@ -12,6 +12,7 @@ import com.elderlycare.platform.elder.mapper.ElderProfileMapper;
 import com.elderlycare.platform.elder.service.ElderCrypto;
 import com.elderlycare.platform.identity.domain.UserAccount;
 import com.elderlycare.platform.identity.mapper.UserAccountMapper;
+import com.elderlycare.platform.notification.service.NotificationEventService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -33,14 +34,15 @@ public class BookingService {
     private final BookingCrypto crypto;
     private final ElderCrypto elderCrypto;
     private final BookingRules rules;
+    private final NotificationEventService notifications;
 
     /** 预约与履约使用同一状态源，装配权限、目录、人员、加密和记录组件。 */
     public BookingService(BookingAccess access, BookingMapper bookings, BookingQueries queries, EventMapper events,
             WorkerMapper workers, ElderProfileMapper elders, UserAccountMapper accounts, ServiceCatalogService catalog,
-            BookingCrypto crypto, ElderCrypto elderCrypto, BookingRules rules) {
+            BookingCrypto crypto, ElderCrypto elderCrypto, BookingRules rules, NotificationEventService notifications) {
         this.access = access; this.bookings = bookings; this.queries = queries; this.events = events;
         this.workers = workers; this.elders = elders; this.accounts = accounts; this.catalog = catalog;
-        this.crypto = crypto; this.elderCrypto = elderCrypto; this.rules = rules;
+        this.crypto = crypto; this.elderCrypto = elderCrypto; this.rules = rules; this.notifications = notifications;
     }
     /** 根据真实角色返回本社区预约、本人/获授权预约或本人工作任务。 */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
@@ -86,7 +88,7 @@ public class BookingService {
     /** 提交申请；请求编号在账号和社区内幂等，资料、快照和事件同事务保存。 */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public BookingResponses.Detail create(Authentication auth, BookingRequests.Create input) {
-        var actor = access.actor(auth); access.lock(actor);
+        var actor = access.writer(auth);
         var app = input.application(); access.elder(actor, app.elderId(), true);
         String hash = crypto.hash("application", app);
         var row = bookings.selectOne(new QueryWrapper<BookingRow>().eq("community_id", actor.getCommunityId())
@@ -106,13 +108,13 @@ public class BookingService {
         row.payloadCipher = crypto.encrypt("application", row.communityId, row.id, app);
         row.requestedStart = app.requestedStart(); row.status = "PENDING"; row.version = 0L; row.hasException = false;
         row.createdAt = Instant.now(); row.updatedAt = row.createdAt;
-        bookings.insert(row); event(actor, row, "CREATE", "PENDING", "已收到预约申请，待社区确认");
+        bookings.insert(row); event(actor, row, "CREATE", "PENDING", "已收到预约申请，待社区确认", null);
         return detail(actor, row);
     }
     /** 确认或改派：锁内检查资格、服务范围和时间冲突，协调说明与安排同时入库。 */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public BookingResponses.Detail arrange(Authentication auth, long id, BookingRequests.Arrange input) {
-        var actor = access.operator(auth); access.lock(actor); var row = visible(actor, id); version(row.version, input.version());
+        var actor = access.operatorWriter(auth); var row = visible(actor, id); version(row.version, input.version());
         requireState(row, "PENDING", "CONFIRMED");
         if ("CONFIRMED".equals(row.status) && !row.scheduledStart.isAfter(Instant.now()))
             throw conflict("BOOKING_ALREADY_DUE", "原服务时间已到，请处理异常或终止后重新预约");
@@ -139,17 +141,19 @@ public class BookingService {
             throw conflict("WORKER_QUALIFICATION_INVALID", "人员资质不符或将在服务结束前到期");
         if (queries.conflicts(row.communityId, worker.id, row.id, input.start(), input.end()) > 0)
             throw conflict("WORKER_TIME_CONFLICT", "该人员在所选时段已有安排，请更换人员或时间");
-        String from = row.status; row.workerId = worker.id; row.scheduledStart = input.start(); row.scheduledEnd = input.end();
+        String from = row.status; Long previousWorker = row.workerId;
+        if (!Objects.equals(previousWorker, worker.id)) row.assignmentVersion++;
+        row.workerId = worker.id; row.scheduledStart = input.start(); row.scheduledEnd = input.end();
         row.status = "CONFIRMED";
         String note = "人员编号：" + worker.id + "；服务时段：" + input.start() + " 至 " + input.end()
                 + "；协调结果：" + (input.coordinationNote().isBlank() ? "按申请时间安排" : input.coordinationNote().strip());
-        save(actor, row, "PENDING".equals(from) ? "CONFIRM" : "RESCHEDULE", from, note);
+        save(actor, row, "PENDING".equals(from) ? "CONFIRM" : "RESCHEDULE", from, note, previousWorker);
         return detail(actor, row);
     }
     /** 执行状态动作；社区、申请方和执行人各自只能执行授权的转换。 */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public BookingResponses.Detail action(Authentication auth, long id, String action, BookingRequests.Action input) {
-        var actor = access.actor(auth); access.lock(actor); var row = visible(actor, id); version(row.version, input.version());
+        var actor = access.writer(auth); var row = visible(actor, id); version(row.version, input.version());
         String from = row.status; Instant now = Instant.now();
         switch (action) {
             case "reject" -> { access.requireOperator(actor); requireState(row, "PENDING"); row.status = "REJECTED"; }
@@ -193,7 +197,7 @@ public class BookingService {
             }
             default -> throw missing();
         }
-        save(actor, row, action.toUpperCase(Locale.ROOT), from, input.note().strip());
+        save(actor, row, action.toUpperCase(Locale.ROOT), from, input.note().strip(), null);
         return detail(actor, row);
     }
     /** 检查执行角色及本人任务关系，管理员也不能代替服务人员提交执行结果。 */
@@ -205,16 +209,17 @@ public class BookingService {
     private void requireState(BookingRow row, String... states) {
         if (!Arrays.asList(states).contains(row.status)) throw conflict("BOOKING_STATE_CONFLICT", "当前预约状态不允许此操作，请刷新后重试");
     }
-    /** 在持有社区锁的事务内保存状态、版本和事件。 */
-    private void save(UserAccount actor, BookingRow row, String action, String from, String note) {
+    /** 在社区锁事务内保存预约及事件，previousWorker仅用于改派旧人员的无正文提示。 */
+    private void save(UserAccount actor, BookingRow row, String action, String from, String note, Long previousWorker) {
         row.version++; row.updatedAt = Instant.now();
-        bookings.updateById(row); event(actor, row, action, from, note);
+        bookings.updateById(row); event(actor, row, action, from, note, previousWorker);
     }
-    /** 记录不可修改的关键状态、安排和加密说明。 */
-    private void event(UserAccount actor, BookingRow row, String action, String from, String note) {
+    /** 事件、加密说明、通知发件箱和接收范围同事务保存，失败时一同回滚。 */
+    private void event(UserAccount actor, BookingRow row, String action, String from, String note, Long previousWorker) {
         var e = new EventRow(); e.id = IdWorker.getId(); e.communityId = row.communityId; e.bookingId = row.id;
         e.actorId = actor.getId(); e.action = action; e.fromStatus = from; e.toStatus = row.status; e.version = row.version;
         e.occurredAt = Instant.now(); e.noteCipher = crypto.encrypt("event", e.communityId, e.id, note); events.insert(e);
+        notifications.capture(actor, row, e, previousWorker);
     }
     /** 对单笔预约强制执行社区和对象权限。 */
     private BookingRow visible(UserAccount actor, long id) {
