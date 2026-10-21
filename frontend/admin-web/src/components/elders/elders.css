@@ -1,5 +1,5 @@
 .elder-workspace {
-  --elder-border: #e0e8e5;
+  --elder-border: var(--ec-border);
 }
 .elder-workspace .el-button,
 .elder-dialog .el-button,
@@ -21,11 +21,11 @@
 .elder-scope-dot {
   width: 8px;
   height: 8px;
-  background: #246c5d;
+  background: var(--ec-primary);
   border-radius: 50%;
 }
 .elder-help {
-  color: #62746f;
+  color: var(--ec-text-secondary);
   font-size: 13px;
   line-height: 1.7;
 }
@@ -37,7 +37,8 @@
   background: white;
   padding: 24px;
   border: 1px solid var(--elder-border);
-  border-radius: 12px;
+  border-radius: var(--ec-radius);
+  box-shadow: var(--ec-shadow-sm);
   margin-bottom: 24px;
 }
 .elder-filters label,
@@ -67,7 +68,7 @@
   padding: 10px 12px;
   border: 1px solid #b7c8c1;
   border-radius: 6px;
-  color: #233d3a;
+  color: var(--ec-text);
   background: #fff;
   font: inherit;
   font-size: 15px;
@@ -90,7 +91,8 @@
 .elder-list {
   background: #fff;
   border: 1px solid var(--elder-border);
-  border-radius: 12px;
+  border-radius: var(--ec-radius);
+  box-shadow: var(--ec-shadow-sm);
   overflow: hidden;
 }
 .elder-list-heading {
@@ -126,7 +128,7 @@
 }
 .elder-table thead {
   background: #f7f9f8;
-  color: #62746f;
+  color: var(--ec-text-secondary);
 }
 .elder-table th,
 .elder-table td {
@@ -201,7 +203,7 @@
   color: #65706f;
 }
 .elder-date {
-  color: #62746f;
+  color: var(--ec-text-secondary);
   font-size: 13px;
 }
 .elder-row-actions {
@@ -220,7 +222,7 @@
   justify-content: space-between;
   gap: 16px;
   font-size: 13px;
-  color: #62746f;
+  color: var(--ec-text-secondary);
 }
 .elder-pagination label,
 .elder-pagination > div {
@@ -237,7 +239,7 @@
 .elder-placeholder {
   padding: 56px 24px;
   text-align: center;
-  color: #62746f;
+  color: var(--ec-text-secondary);
   overflow-wrap: anywhere;
 }
 .elder-placeholder h3 {
@@ -245,7 +247,7 @@
 }
 .elder-dialog,
 .elder-drawer {
-  --el-text-color-primary: #233d3a;
+  --el-text-color-primary: var(--ec-text);
   --el-font-size-base: 15px;
 }
 .elder-dialog .el-dialog__body {
@@ -262,7 +264,7 @@
   font-size: 14px;
   line-height: 1.7;
   margin: 0 0 24px;
-  color: #62746f;
+  color: var(--ec-text-secondary);
 }
 .elder-required,
 .elder-field-error {
@@ -280,7 +282,7 @@
   min-width: 0;
 }
 .elder-fieldset legend {
-  color: #233d3a;
+  color: var(--ec-text);
   font-size: 16px;
   font-weight: 600;
   padding: 0;
@@ -328,10 +330,10 @@
 .elder-drawer .el-drawer__header {
   margin-bottom: 0;
   padding-bottom: 20px;
-  border-bottom: 1px solid #e4ebe7;
+  border-bottom: 1px solid var(--ec-border);
 }
 .elder-drawer .el-drawer__footer {
-  border-top: 1px solid #e4ebe7;
+  border-top: 1px solid var(--ec-border);
 }
 .elder-profile-heading {
   display: flex;
@@ -345,7 +347,7 @@
   overflow-wrap: anywhere;
 }
 .elder-profile-heading p {
-  color: #62746f;
+  color: var(--ec-text-secondary);
   font-size: 14px;
   margin: 0;
 }
@@ -355,7 +357,7 @@
 .elder-detail-section {
   padding: 0 0 24px;
   margin-bottom: 24px;
-  border-bottom: 1px solid #e4ebe7;
+  border-bottom: 1px solid var(--ec-border);
 }
 .elder-detail-section h3,
 .elder-history h3 {
@@ -366,13 +368,13 @@
   margin: 0;
 }
 .elder-description dt {
-  color: #62746f;
+  color: var(--ec-text-secondary);
   font-size: 13px;
   margin-bottom: 8px;
 }
 .elder-description dd {
   margin: 0;
-  color: #233d3a;
+  color: var(--ec-text);
   font-size: 15px;
   overflow-wrap: anywhere;
 }
@@ -387,7 +389,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  color: #62746f;
+  color: var(--ec-text-secondary);
   font-size: 13px;
   margin-bottom: 28px;
 }
@@ -430,7 +432,7 @@
   font-size: 14px;
 }
 .elder-history-heading time {
-  color: #62746f;
+  color: var(--ec-text-secondary);
   font-size: 12px;
 }
 .elder-timeline p {

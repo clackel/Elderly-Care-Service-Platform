@@ -33,7 +33,13 @@ async function submit() {
   errorMessage.value = ''
   try {
     await session.login(username.value.trim(), password.value)
-    await router.replace(session.canAccessAdmin ? session.account?.passwordChangeRequired ? '/password' : '/' : '/forbidden')
+    await router.replace(
+      session.canAccessAdmin
+        ? session.account?.passwordChangeRequired
+          ? '/password'
+          : '/'
+        : '/forbidden',
+    )
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '登录失败'
   } finally {
@@ -54,18 +60,21 @@ onBeforeUnmount(() => {
       <span class="eyebrow">ELDERLY CARE SERVICE PLATFORM</span>
       <h1>让社区服务<br />更有温度。</h1>
       <p>社区养老服务平台 · 运营管理后台</p>
+      <ul class="intro-points">
+        <li><span aria-hidden="true">✓</span>老人档案加密存储，按社区隔离访问</li>
+        <li><span aria-hidden="true">✓</span>服务预约、人员安排与履约进度一处掌握</li>
+        <li><span aria-hidden="true">✓</span>健康记录须经老人本人授权方可协助录入</li>
+      </ul>
       <div class="intro-note">连接社区、服务人员与每一个家庭</div>
     </section>
     <section class="login-card">
-      <div class="brand-mark" aria-hidden="true">安</div>
+      <div class="login-card-brand">
+        <span class="brand-mark" aria-hidden="true">安</span>
+        <span>社区养老<small>运营管理平台</small></span>
+      </div>
       <h2>登录管理后台</h2>
       <p class="muted">使用已分配的社区管理账号</p>
-      <el-alert
-        v-if="development"
-        title="开发环境：请使用合成数据"
-        type="info"
-        :closable="false"
-      />
+      <el-alert v-if="development" title="开发环境：请使用合成数据" type="info" :closable="false" />
       <el-alert
         v-if="errorMessage"
         :title="errorMessage"
