@@ -77,7 +77,7 @@
 
 V4 新增 health_record、health_record_revision、health_grant、health_event、health_mutation_request。写事务使用 READ_COMMITTED，按社区行锁→身份及对象/绑定/授权检查→期望版本更新→历史、事件和幂等结果的顺序执行。档案归档及已有本人绑定变更沿用相同社区锁。数据库唯一约束和记录条件版本更新共同保护一致性。
 
-测量及原因整体采用 AES-256-GCM；沿用 ELDER_DATA_KEY 主密钥，分别以 health:encryption:v1 与 health:request:v1 派生健康密钥。随机12字节 IV，附加认证数据绑定社区、老人、记录及版本。请求摘要使用 HMAC-SHA256，不能用无密钥健康值哈希。既有密文仍依赖原主密钥，密钥更换需专门迁移。
+测量及原因整体采用 AES-256-GCM；沿用 ELDER_DATA_KEY 主密钥，分别以 health:encryption:v1 与 health:request:v1 派生健康密钥。随机12字节 IV，附加认证数据绑定社区、老人、记录及版本。请求摘要使用 HMAC-SHA256，不能用无密钥健康值哈希。活动密钥可按[主密钥轮换](ELDER_API.md#主密钥轮换)切换，旧密文仍需保留原主密钥解密。
 
 社区、老人、指标、当前状态、测量时间、血糖场景和来源为受权限保护的最少检索元数据；测量数值及更正原因不明文存储。health_event 仅保存操作人、对象、动作及时间，不保存正文。只在权限限定后解密选中页或有界趋势。
 
