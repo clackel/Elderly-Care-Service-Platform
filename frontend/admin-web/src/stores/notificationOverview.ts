@@ -35,9 +35,15 @@ export const useNotificationOverviewStore = defineStore('notificationOverview', 
     loading.value = true
     try {
       const [count, tasks] = await Promise.all([
-        notificationUnreadCount(active.signal), listTodos(1, '', active.signal, 1),
+        notificationUnreadCount(active.signal),
+        listTodos(1, '', active.signal, 1),
       ])
-      if (active.signal.aborted || currentSessionEpoch() !== epoch || session.account?.id !== ownerId) return
+      if (
+        active.signal.aborted ||
+        currentSessionEpoch() !== epoch ||
+        session.account?.id !== ownerId
+      )
+        return
       unread.value = count.count
       todos.value = tasks.total
     } catch (cause) {

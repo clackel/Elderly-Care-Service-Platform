@@ -29,7 +29,9 @@ export function clearSession() {
   epoch++
 }
 /** 认证操作开始时作废先前请求，保留当前Cookie供本次恢复、登录或注销使用。 */
-export function invalidatePendingRequests() { epoch++ }
+export function invalidatePendingRequests() {
+  epoch++
+}
 /** 确定H5同源代理或微信已配置的HTTPS接口地址。 */
 function baseUrl(): string {
   let url = import.meta.env.VITE_API_BASE_URL || ''

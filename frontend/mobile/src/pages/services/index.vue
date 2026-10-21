@@ -5,12 +5,14 @@ import PageFrame from '../../components/PageFrame.vue'
 import MobileBookingWorkspace from '../../components/booking/MobileBookingWorkspace.vue'
 import { useSessionStore } from '../../stores/session'
 const session = useSessionStore(),
-  visible = shallowRef(false), error = shallowRef('')
+  visible = shallowRef(false),
+  error = shallowRef('')
 let visit = 0
 /** 返回服务页先恢复当前身份，再挂载列表或消费消息传来的预约目标。 */
 onShow(async () => {
   const current = ++visit
-  visible.value = false; error.value = ''
+  visible.value = false
+  error.value = ''
   try {
     await session.restore()
     if (current === visit) visible.value = true
@@ -19,7 +21,10 @@ onShow(async () => {
   }
 })
 /** 页面隐藏或退出立即卸载预约详情，迟到请求不得回填旧内容。 */
-function hide() { visit++; visible.value = false }
+function hide() {
+  visit++
+  visible.value = false
+}
 onHide(hide)
 onUnload(hide)
 /** 引导到真实账号登录入口。 */

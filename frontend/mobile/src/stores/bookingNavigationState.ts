@@ -15,7 +15,9 @@ export function createBookingNavigation() {
   }
 
   /** 会话结束或导航失败时删除尚未消费的意图。 */
-  function clear() { pending = null }
+  function clear() {
+    pending = null
+  }
 
   return { queue, consume, clear }
 }
