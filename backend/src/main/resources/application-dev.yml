@@ -31,3 +31,5 @@ springdoc:
     enabled: true
 app:
   dev-password: ${APP_DEV_PASSWORD:}
+  login-throttle:
+    store: memory

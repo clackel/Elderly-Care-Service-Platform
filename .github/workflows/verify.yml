@@ -45,6 +45,15 @@ jobs:
           ELDER_TEST_DB_PASSWORD: ci-test-only
           ELDER_TEST_DB_DRIVER: com.mysql.cj.jdbc.Driver
         run: mvn -B -ntp -Dtest=ElderProfileIntegrationTest test
+      - name: Verify identity and admin accounts on MySQL
+        working-directory: backend
+        # 使用独立数据库，避免与档案测试的合成社区和账号互相干扰。
+        env:
+          IDENTITY_TEST_DB_URL: jdbc:mysql://127.0.0.1:3306/identity_module_test?createDatabaseIfNotExist=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true
+          IDENTITY_TEST_DB_USERNAME: root
+          IDENTITY_TEST_DB_PASSWORD: ci-test-only
+          IDENTITY_TEST_DB_DRIVER: com.mysql.cj.jdbc.Driver
+        run: mvn -B -ntp -Dtest=IdentityIntegrationTest test
   admin:
     runs-on: ubuntu-latest
     steps:

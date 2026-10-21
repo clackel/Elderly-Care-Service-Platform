@@ -78,6 +78,11 @@ app:
     cancel-before-minutes: ${BOOKING_CANCEL_BEFORE_MINUTES:120}
   elder:
     encryption-key: ${ELDER_DATA_KEY:}
+  crypto:
+    # 新密文使用的主密钥编号；1为ELDER_DATA_KEY，其余密钥通过APP_CRYPTO_KEYS_<编号>配置。
+    active-key-id: ${APP_CRYPTO_ACTIVE_KEY_ID:1}
+  login-throttle:
+    store: redis
   integrations:
     wechat-app-id: ${WECHAT_APP_ID:}
     wechat-app-secret: ${WECHAT_APP_SECRET:}

@@ -65,7 +65,7 @@ Flyway 迁移位于 `backend/src/main/resources/db/migration/`；已发布迁移
 
 ## 6. 基础设施与环境
 
-`dev`：H2 文件库、进程内会话、无 Redis 连接需求，仅监听回环地址；手动提供 `APP_DEV_PASSWORD` 及 RabbitMQ 连接配置。通知投递依赖真实 RabbitMQ，不使用内存消息替代；配置和失败处理见[通知接口](NOTIFICATIONS_API.md)。
+`dev`：H2 文件库、进程内会话及进程内登录限流、无 Redis 连接需求，仅监听回环地址；手动提供 `APP_DEV_PASSWORD` 及 RabbitMQ 连接配置。通知投递依赖真实 RabbitMQ，不使用内存消息替代；配置和失败处理见[通知接口](NOTIFICATIONS_API.md)。
 
 本机 MySQL 测试需手动激活 `dev,local`。将 `backend/config/application-local.yml.example` 复制为同目录的 `application-local.yml`，在文件中覆盖数据源 URL、账号、密码及 MySQL 驱动，并提供 `app.dev-password`。以 `backend` 为工作目录，执行 `mvn spring-boot:run '-Dspring-boot.run.profiles=dev,local'`；IDE 调试使用相同工作目录和 Active profiles。Spring Boot 从外部 `config/` 目录加载配置；只启用 dev 不会加载 local 文件。实际文件被 Git 忽略且不进入 JAR。环境变量仍优先于文件，已有数据库必须沿用原加密密钥。此方式保留开发账号初始化及进程内会话，仅用于本机合成数据测试；配置登录密码仅初始化新账号，不重置已有账号密码。
 
@@ -82,7 +82,7 @@ docker compose up -d
 
 后端需要独立设置 `DB_URL`、`DB_USERNAME`、`DB_PASSWORD`、`REDIS_HOST`、`REDIS_PASSWORD`、`RABBITMQ_HOST`、`RABBITMQ_USERNAME`、`RABBITMQ_PASSWORD`。Compose 的 `.env` 不会自动传给 Maven 启动的进程。
 
-Compose 使用固定镜像版本，端口仅映射回环地址，数据通过命名卷保存。Nginx 文件只是路由示例；非 dev 使用 HTTPS 并保留 Secure Cookie。后台登录限流为单实例内存计数，多实例或代理部署需在可信入口统一限制。大创阶段未实现 MFA，真实社区部署另行确定运营和接入范围。
+Compose 使用固定镜像版本，端口仅映射回环地址，数据通过命名卷保存。Nginx 文件只是路由示例；非 dev 使用 HTTPS 并保留 Secure Cookie。非 dev 的登录限流计数保存在 Redis，多实例共享；经代理访问时应用只能看到代理地址，需在可信入口按真实来源补充限制。大创阶段未实现 MFA，真实社区部署另行确定运营和接入范围。
 
 微信 AppID/AppSecret 用于真实小程序身份交换；缺少配置时关闭登录能力。小程序复用服务器会话及 CSRF，Cookie 只保存在运行内存。RabbitMQ 负责预约站内通知投递；对象存储和外部通知供应商字段仍为预留，短信、电话和微信订阅消息尚未接入。预约规则、开通码及部署要求见[预约接口](SERVICE_BOOKING_API.md)。
 

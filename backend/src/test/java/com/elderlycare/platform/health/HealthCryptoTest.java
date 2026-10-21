@@ -1,5 +1,6 @@
 package com.elderlycare.platform.health;
 
+import com.elderlycare.platform.common.crypto.DataKeyRing;
 import com.elderlycare.platform.health.api.*;
 import com.elderlycare.platform.health.domain.HealthTypes.*;
 import com.elderlycare.platform.health.service.HealthCrypto;
@@ -13,7 +14,7 @@ class HealthCryptoTest {
     /** 健康密文不能移到另一个社区、老人、记录或版本，随机IV避免重复密文。 */
     @Test void bindsEveryObjectDimensionAndUsesRandomNonce() {
         var env = new MockEnvironment(); env.setActiveProfiles("dev");
-        var crypto = new HealthCrypto("", env, JsonMapper.builder().findAndAddModules().build());
+        var crypto = new HealthCrypto(new DataKeyRing(env), JsonMapper.builder().findAndAddModules().build());
         var payload = new HealthResponses.Payload(new HealthRequests.Measurement(Type.HEART_RATE,
                 Instant.parse("2020-01-01T00:00:00Z"), null, null, 70, null, null, null), "合成更正原因");
         String cipher = crypto.encrypt(1, 2, 3, 1, payload);

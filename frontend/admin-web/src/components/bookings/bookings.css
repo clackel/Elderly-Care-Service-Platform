@@ -5,8 +5,9 @@
 .booking-panel {
   padding: 24px;
   background: #fff;
-  border: 1px solid #dce6df;
-  border-radius: 14px;
+  border: 1px solid var(--ec-border);
+  border-radius: var(--ec-radius);
+  box-shadow: var(--ec-shadow-sm);
   min-width: 0;
 }
 .booking-toolbar,
@@ -30,14 +31,14 @@
 .booking-link {
   cursor: pointer;
   border: 1px solid #bccfc5;
-  color: #246c5d;
+  color: var(--ec-primary);
   border-radius: 8px;
   background: #fff;
   padding: 10px 15px;
 }
 .booking-tabs button[aria-selected='true'],
 .booking-primary {
-  background: #246c5d !important;
+  background: var(--ec-primary) !important;
   color: white !important;
 }
 .booking-workspace button:disabled {
@@ -62,7 +63,7 @@
   border: 1px solid #b7c8bf;
   border-radius: 7px;
   padding: 10px 12px;
-  color: #233d3a;
+  color: var(--ec-text);
   background: #fff;
   font: inherit;
   min-width: 0;
@@ -92,7 +93,7 @@
   line-height: 1.6;
 }
 .booking-muted {
-  color: #66776f;
+  color: var(--ec-text-secondary);
   font-size: 13px;
   line-height: 1.8;
 }
@@ -101,7 +102,7 @@
   padding: 4px 10px;
   background: #edf4ef;
   border-radius: 20px;
-  color: #246c5d;
+  color: var(--ec-primary);
   white-space: nowrap;
 }
 .booking-warning {
@@ -128,7 +129,7 @@
   line-height: 1.7;
 }
 .booking-facts dt {
-  color: #66776f;
+  color: var(--ec-text-secondary);
   font-size: 13px;
 }
 .booking-facts dd {
