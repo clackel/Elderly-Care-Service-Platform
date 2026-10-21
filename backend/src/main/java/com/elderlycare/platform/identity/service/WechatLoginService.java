@@ -33,28 +33,24 @@ public class WechatLoginService {
     private final UserAccountMapper accounts;
     private final CommunityMapper communities;
     private final TransactionTemplate transactions;
-    private final Map<String, Attempt> attempts = new HashMap<>();
-    private record Attempt(Instant until, int count) {}
+    private final LoginAttemptStore attempts;
     /** 外部凭证由环境配置；身份交换不接收客户端自报的openid或账号编号。 */
     public WechatLoginService(@Value("${app.integrations.wechat-app-id:}") String appId,
             @Value("${app.integrations.wechat-app-secret:}") String secret, ObjectMapper json, BookingCrypto crypto,
             WechatIdentityMapper identities, EnrollmentMapper enrollments, UserAccountMapper accounts,
-            CommunityMapper communities, PlatformTransactionManager manager) {
-        this.appId = appId; this.secret = secret; this.json = json; this.crypto = crypto;
+            CommunityMapper communities, PlatformTransactionManager manager, LoginAttemptStore attempts) {
+        this.appId = appId; this.secret = secret; this.json = json; this.crypto = crypto; this.attempts = attempts;
         this.identities = identities; this.enrollments = enrollments; this.accounts = accounts; this.communities = communities;
         this.transactions = new TransactionTemplate(manager);
         this.transactions.setIsolationLevel(org.springframework.transaction.TransactionDefinition.ISOLATION_READ_COMMITTED);
     }
     /** 缺少真实小程序凭证时不宣称登录可用。 */
     public boolean enabled() { return !appId.isBlank() && !secret.isBlank(); }
-    /** 限制单实例来源请求频率并回收过期计数，不信任客户端转发地址头。 */
-    private synchronized void throttle(String address) {
-        var now = Instant.now(); attempts.entrySet().removeIf(e -> e.getValue().until().isBefore(now));
+    /** 按来源每分钟最多20次，计数保存在共享存储中，不信任客户端转发地址头。 */
+    private void throttle(String address) {
         String key = crypto.hash("login-peer", address);
-        var attempt = attempts.get(key);
-        if ((attempt != null && attempt.count() >= 20) || (attempt == null && attempts.size() >= 10000))
+        if (!attempts.tryAcquire(List.of(new LoginAttemptStore.Limit(key, 20)), Duration.ofSeconds(60)))
             throw error(HttpStatus.TOO_MANY_REQUESTS, "LOGIN_RATE_LIMITED", "登录请求过于频繁，请一分钟后重试");
-        attempts.put(key, new Attempt(attempt == null ? now.plusSeconds(60) : attempt.until(), attempt == null ? 1 : attempt.count() + 1));
     }
     /** 向微信校验临时凭证后加载已核验账号，首次绑定消耗一次性开通码。 */
     public UserAccount login(String code, String token, String address) {

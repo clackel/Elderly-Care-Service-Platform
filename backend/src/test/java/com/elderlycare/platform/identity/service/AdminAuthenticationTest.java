@@ -1,13 +1,14 @@
 package com.elderlycare.platform.identity.service;
 
-import com.elderlycare.platform.booking.service.BookingCrypto;
 import com.elderlycare.platform.common.api.BusinessException;
+import com.elderlycare.platform.common.crypto.DataKeyRing;
 import com.elderlycare.platform.identity.domain.Community;
 import com.elderlycare.platform.identity.domain.UserAccount;
 import com.elderlycare.platform.identity.mapper.CommunityMapper;
 import com.elderlycare.platform.identity.mapper.UserAccountMapper;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import static org.assertj.core.api.Assertions.*;
@@ -16,9 +17,9 @@ import static org.mockito.Mockito.*;
 
 class AdminAuthenticationTest {
     @Test void accountLimitCoversDifferentAddressesAndExpiresAtWindowBoundary() {
-        var crypto = crypto(); var clock = mock(Clock.class); var now = Instant.parse("2026-01-01T00:00:00Z");
+        var clock = mock(Clock.class); var now = Instant.parse("2026-01-01T00:00:00Z");
         when(clock.instant()).thenReturn(now);
-        var throttle = new AdminLoginThrottle(crypto, clock);
+        var throttle = new AdminLoginThrottle(keys(), new MemoryLoginAttemptStore(clock));
         for (int i = 0; i < 10; i++) throttle.check("peer-" + i, " TEST.ADMIN ");
         assertThatThrownBy(() -> throttle.check("another-peer", "test.admin"))
                 .isInstanceOfSatisfying(BusinessException.class, error -> assertThat(error.code()).isEqualTo("LOGIN_RATE_LIMITED"));
@@ -27,7 +28,7 @@ class AdminAuthenticationTest {
     }
 
     @Test void sourceLimitCoversDifferentAccounts() {
-        var throttle = new AdminLoginThrottle(crypto(), Clock.fixed(Instant.EPOCH, java.time.ZoneOffset.UTC));
+        var throttle = new AdminLoginThrottle(keys(), new MemoryLoginAttemptStore(Clock.fixed(Instant.EPOCH, java.time.ZoneOffset.UTC)));
         for (int i = 0; i < 20; i++) throttle.check("one-peer", "account-" + i);
         assertThatThrownBy(() -> throttle.check("one-peer", "new-account")).isInstanceOf(BusinessException.class);
     }
@@ -52,10 +53,8 @@ class AdminAuthenticationTest {
         assertThat(service.loadUserByUsername(" TEST.USER ")).isInstanceOf(AccountSessions.LoginUser.class);
     }
 
-    /** 以可比较的合成摘要替代密钥设施，仅测试计数及归一规则。 */
-    private BookingCrypto crypto() {
-        var crypto = mock(BookingCrypto.class);
-        when(crypto.hash(anyString(), any())).thenAnswer(call -> call.getArgument(0) + ":" + call.getArgument(1));
-        return crypto;
+    /** 使用dev公开密钥派生计数键摘要，仅测试计数及归一规则。 */
+    private DataKeyRing keys() {
+        return new DataKeyRing("", Map.of(), "1", true);
     }
 }
