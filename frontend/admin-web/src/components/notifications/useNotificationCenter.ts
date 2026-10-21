@@ -3,9 +3,16 @@ import { useRouter } from 'vue-router'
 import { ApiError } from '../../api/http'
 import { currentSessionEpoch } from '../../api/sessionEpoch'
 import {
-  listDeliveryFailures, listNotifications, listTodos, notificationBookingId,
-  readNotification, retryNotificationDelivery,
-  type DeliveryFailure, type Notice, type Todo, type TodoType,
+  listDeliveryFailures,
+  listNotifications,
+  listTodos,
+  notificationBookingId,
+  readNotification,
+  retryNotificationDelivery,
+  type DeliveryFailure,
+  type Notice,
+  type Todo,
+  type TodoType,
 } from '../../api/notifications'
 import { useSessionStore } from '../../stores/session'
 import { useBookingNavigationStore } from '../../stores/bookingNavigation'
@@ -57,8 +64,13 @@ export function useNotificationCenter() {
 
   /** 请求返回后同时检查组件、可见性和登录代次，避免旧身份结果重新出现。 */
   function current(controller: AbortController, epoch: number): boolean {
-    return alive && !controller.signal.aborted && currentSessionEpoch() === epoch &&
-      session.canViewNotifications && document.visibilityState === 'visible'
+    return (
+      alive &&
+      !controller.signal.aborted &&
+      currentSessionEpoch() === epoch &&
+      session.canViewNotifications &&
+      document.visibilityState === 'visible'
+    )
   }
 
   /** 取消旧读取并加载当前页签；结果数量变化导致空页时回到最后有效页。 */
@@ -97,7 +109,8 @@ export function useNotificationCenter() {
     } catch (cause) {
       if (current(controller, epoch)) listError.value = errorText(cause)
     } finally {
-      if (alive && readController === controller && !controller.signal.aborted) loading.value = false
+      if (alive && readController === controller && !controller.signal.aborted)
+        loading.value = false
     }
   }
 
@@ -148,7 +161,8 @@ export function useNotificationCenter() {
     } catch (cause) {
       if (current(controller, epoch)) writeError.value = errorText(cause) + '。可重试标记已读。'
     } finally {
-      if (alive && writeController === controller && !controller.signal.aborted) writingId.value = ''
+      if (alive && writeController === controller && !controller.signal.aborted)
+        writingId.value = ''
     }
   }
 
@@ -156,7 +170,9 @@ export function useNotificationCenter() {
   async function retryDelivery(failure?: DeliveryFailure) {
     if (writingId.value || !session.canViewNotifications) return
     if (pendingRetry.value && failure && pendingRetry.value.eventId !== failure.eventId) return
-    const attempt = pendingRetry.value ?? (failure ? { eventId: failure.eventId, version: failure.version } : null)
+    const attempt =
+      pendingRetry.value ??
+      (failure ? { eventId: failure.eventId, version: failure.version } : null)
     if (!attempt) return
     const controller = new AbortController()
     writeController = controller
@@ -173,7 +189,11 @@ export function useNotificationCenter() {
       await load()
     } catch (cause) {
       if (!current(controller, epoch)) return
-      const uncertain = !(cause instanceof ApiError) || cause.status === 0 || cause.status >= 500 || (cause.status >= 200 && cause.status < 300)
+      const uncertain =
+        !(cause instanceof ApiError) ||
+        cause.status === 0 ||
+        cause.status >= 500 ||
+        (cause.status >= 200 && cause.status < 300)
       if (!uncertain) pendingRetry.value = null
       writeError.value = errorText(cause)
       if (cause instanceof ApiError && cause.status === 409) {
@@ -181,7 +201,8 @@ export function useNotificationCenter() {
         await load()
       }
     } finally {
-      if (alive && writeController === controller && !controller.signal.aborted) writingId.value = ''
+      if (alive && writeController === controller && !controller.signal.aborted)
+        writingId.value = ''
     }
   }
 
@@ -210,12 +231,49 @@ export function useNotificationCenter() {
     if (document.visibilityState === 'visible') void load()
   }
 
-  watch(() => [session.account?.id, session.account?.role, session.account?.communityId, session.account?.passwordChangeRequired], () => { clear(); void load() }, { immediate: true })
+  watch(
+    () => [
+      session.account?.id,
+      session.account?.role,
+      session.account?.communityId,
+      session.account?.passwordChangeRequired,
+    ],
+    () => {
+      clear()
+      void load()
+    },
+    { immediate: true },
+  )
   onMounted(() => document.addEventListener('visibilitychange', visibilityChanged))
   onBeforeUnmount(() => {
     alive = false
     document.removeEventListener('visibilitychange', visibilityChanged)
     clear()
   })
-  return { tab, page, total, pages, unreadOnly, todoType, notices, todos, deliveries, loading, writingId, listError, writeError, feedback, pendingRetry, load, changeTab, filterUnread, filterTodos, paginate, markRead, retryDelivery, openBooking, openNotice }
+  return {
+    tab,
+    page,
+    total,
+    pages,
+    unreadOnly,
+    todoType,
+    notices,
+    todos,
+    deliveries,
+    loading,
+    writingId,
+    listError,
+    writeError,
+    feedback,
+    pendingRetry,
+    load,
+    changeTab,
+    filterUnread,
+    filterTodos,
+    paginate,
+    markRead,
+    retryDelivery,
+    openBooking,
+    openNotice,
+  }
 }

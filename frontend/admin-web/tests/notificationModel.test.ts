@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { canViewAdminNotifications, notificationBookingId, notificationTitle } from '../../shared/notifications.ts'
+import {
+  canViewAdminNotifications,
+  notificationBookingId,
+  notificationTitle,
+} from '../../shared/notifications.ts'
 
 test('移交提示始终隐藏预约入口，缺失目标也不得生成详情导航', () => {
   assert.equal(notificationBookingId({ action: 'TASK_TRANSFERRED', bookingId: '7001' }), null)

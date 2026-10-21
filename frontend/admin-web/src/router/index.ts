@@ -6,7 +6,11 @@ export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
-    { path: '/password', name: 'password', component: () => import('../views/PasswordChangeView.vue') },
+    {
+      path: '/password',
+      name: 'password',
+      component: () => import('../views/PasswordChangeView.vue'),
+    },
     { path: '/forbidden', component: () => import('../views/ForbiddenView.vue') },
     {
       path: '/',
@@ -24,18 +28,18 @@ export const router = createRouter({
             module.path === 'notifications'
               ? () => import('../views/NotificationsView.vue')
               : module.path === 'accounts'
-              ? () => import('../views/AdminAccountsView.vue')
-              : module.path === 'health'
-              ? () => import('../views/HealthView.vue')
-              : module.path === 'elders'
-              ? () => import('../views/EldersView.vue')
-              : module.path === 'services'
-                ? () => import('../views/ServicesView.vue')
-                : module.path === 'consent'
-                  ? () => import('../views/BookingAccessView.vue')
-                  : module.path === 'bookings' || module.path === 'fulfillment'
-                    ? () => import('../views/BookingsView.vue')
-                    : () => import('../views/ModuleView.vue'),
+                ? () => import('../views/AdminAccountsView.vue')
+                : module.path === 'health'
+                  ? () => import('../views/HealthView.vue')
+                  : module.path === 'elders'
+                    ? () => import('../views/EldersView.vue')
+                    : module.path === 'services'
+                      ? () => import('../views/ServicesView.vue')
+                      : module.path === 'consent'
+                        ? () => import('../views/BookingAccessView.vue')
+                        : module.path === 'bookings' || module.path === 'fulfillment'
+                          ? () => import('../views/BookingsView.vue')
+                          : () => import('../views/ModuleView.vue'),
           meta: {
             title: module.title,
             description: module.description,

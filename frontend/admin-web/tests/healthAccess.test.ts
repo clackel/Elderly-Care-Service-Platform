@@ -6,7 +6,15 @@ import { canAssistHealth } from '../../shared/health.ts'
 test('健康协助入口不继承管理角色权限', () => {
   assert.equal(canAssistHealth('COMMUNITY_OPERATOR', '1'), true)
   assert.equal(canAssistHealth('COMMUNITY_OPERATOR', null), false)
-  for (const role of ['PLATFORM_ADMIN', 'STAFF', 'AUDITOR', 'DUTY_OFFICER', 'FAMILY', 'ELDER', undefined]) {
+  for (const role of [
+    'PLATFORM_ADMIN',
+    'STAFF',
+    'AUDITOR',
+    'DUTY_OFFICER',
+    'FAMILY',
+    'ELDER',
+    undefined,
+  ]) {
     assert.equal(canAssistHealth(role, '1'), false)
   }
 })

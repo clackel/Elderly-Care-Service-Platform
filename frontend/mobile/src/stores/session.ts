@@ -19,7 +19,9 @@ export const useSessionStore = defineStore('session', () => {
     const pending = work()
     authenticationChange = pending
     /** 只释放本次认证操作，迟到结束不能影响后来的操作。 */
-    function release() { if (authenticationChange === pending) authenticationChange = null }
+    function release() {
+      if (authenticationChange === pending) authenticationChange = null
+    }
     void pending.then(release, release)
     return pending
   }

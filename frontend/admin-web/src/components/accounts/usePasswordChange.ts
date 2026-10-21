@@ -48,7 +48,10 @@ export function usePasswordChange() {
   function confirmLeave(): boolean {
     if (!session.account) return true
     if (busy.value) return false
-    if (uncertain.value) return window.confirm('改密结果尚未确认，离开会清除本次重试信息。可重新登录核对密码是否生效。确定离开吗？')
+    if (uncertain.value)
+      return window.confirm(
+        '改密结果尚未确认，离开会清除本次重试信息。可重新登录核对密码是否生效。确定离开吗？',
+      )
     return !dirty.value || window.confirm('尚有未保存的密码输入，离开后将清除。确定离开吗？')
   }
 
@@ -69,6 +72,9 @@ export function usePasswordChange() {
     }
   }
 
-  onBeforeUnmount(() => { disposed = true; pending = null })
+  onBeforeUnmount(() => {
+    disposed = true
+    pending = null
+  })
   return { busy, uncertain, error, dirty, required, save, logout, confirmLeave }
 }
