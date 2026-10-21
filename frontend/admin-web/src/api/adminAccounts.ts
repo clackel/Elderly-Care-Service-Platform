@@ -27,8 +27,23 @@ export interface AccountEvent {
   occurredAt: string
 }
 export type AccountMutation =
-  | { kind: 'create'; requestId: string; username: string; displayName: string; role: AdminRole; password: string }
-  | { kind: 'update'; requestId: string; id: string; version: number; displayName: string; role: AdminRole; status: AccountStatus }
+  | {
+      kind: 'create'
+      requestId: string
+      username: string
+      displayName: string
+      role: AdminRole
+      password: string
+    }
+  | {
+      kind: 'update'
+      requestId: string
+      id: string
+      version: number
+      displayName: string
+      role: AdminRole
+      status: AccountStatus
+    }
   | { kind: 'reset'; requestId: string; id: string; version: number; password: string }
 
 /** 分页读取本社区后台账号；signal用于取消已过期的查询。 */

@@ -6,27 +6,131 @@
   padding: 22px;
   margin-bottom: 20px;
 }
-.account-scope { padding: 14px 18px; background: #e9f1e9; border-radius: 8px; line-height: 1.8; font-size: 14px; }
-.account-filters { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
-.account-field { display: grid; gap: 8px; font-size: 14px; }
-.account-filters .account-field { flex: 1; min-width: 160px; }
-.account-control { width: 100%; min-height: 40px; border: 1px solid #cbd8d0; border-radius: 8px; padding: 9px 12px; background: white; color: var(--ec-text); font: inherit; }
-.account-control:disabled { background: #f4f6f5; color: #687971; }
-.account-control[aria-invalid='true'] { border-color: #b64135; }
-.account-fieldset { border: 0; margin: 0; padding: 0 0 20px; display: grid; gap: 18px; min-width: 0; }
-.account-field-error { color: #b64135; font-size: 13px; }
-.account-help { color: var(--ec-text-secondary); font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; }
-.account-warning { color: #906018; background: #fff6e6; padding: 12px; border-radius: 8px; line-height: 1.8; }
-.account-table-scroll { overflow-x: auto; }
-.account-table { border-collapse: collapse; width: 100%; font-size: 14px; }
-.account-table th, .account-table td { padding: 16px 12px; text-align: left; border-bottom: 1px solid #edf1ee; vertical-align: middle; }
-.account-table th { background: #f6f8f6; color: var(--ec-text-secondary); white-space: nowrap; }
-.account-row-actions { white-space: nowrap; }
-.account-pagination { display: flex; gap: 16px; justify-content: space-between; align-items: center; margin-top: 20px; flex-wrap: wrap; }
-.account-history { list-style: none; margin: 0; padding: 0; }
-.account-history li { border-bottom: 1px solid #edf1ee; padding: 16px 0; }
-.account-history time { display: block; margin-top: 6px; color: var(--ec-text-secondary); font-size: 13px; }
-.account-history p { margin: 6px 0 0; }
-.password-page { max-width: 600px; margin: 8vh auto; padding: 24px; }
-.password-page h1 { font-size: 26px; }
-.password-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+.account-scope {
+  padding: 14px 18px;
+  background: #e9f1e9;
+  border-radius: 8px;
+  line-height: 1.8;
+  font-size: 14px;
+}
+.account-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.account-field {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+}
+.account-filters .account-field {
+  flex: 1;
+  min-width: 160px;
+}
+.account-control {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #cbd8d0;
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: white;
+  color: var(--ec-text);
+  font: inherit;
+}
+.account-control:disabled {
+  background: #f4f6f5;
+  color: #687971;
+}
+.account-control[aria-invalid='true'] {
+  border-color: #b64135;
+}
+.account-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0 0 20px;
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.account-field-error {
+  color: #b64135;
+  font-size: 13px;
+}
+.account-help {
+  color: var(--ec-text-secondary);
+  font-size: 13px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.account-warning {
+  color: #906018;
+  background: #fff6e6;
+  padding: 12px;
+  border-radius: 8px;
+  line-height: 1.8;
+}
+.account-table-scroll {
+  overflow-x: auto;
+}
+.account-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px;
+}
+.account-table th,
+.account-table td {
+  padding: 16px 12px;
+  text-align: left;
+  border-bottom: 1px solid #edf1ee;
+  vertical-align: middle;
+}
+.account-table th {
+  background: #f6f8f6;
+  color: var(--ec-text-secondary);
+  white-space: nowrap;
+}
+.account-row-actions {
+  white-space: nowrap;
+}
+.account-pagination {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.account-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.account-history li {
+  border-bottom: 1px solid #edf1ee;
+  padding: 16px 0;
+}
+.account-history time {
+  display: block;
+  margin-top: 6px;
+  color: var(--ec-text-secondary);
+  font-size: 13px;
+}
+.account-history p {
+  margin: 6px 0 0;
+}
+.password-page {
+  max-width: 600px;
+  margin: 8vh auto;
+  padding: 24px;
+}
+.password-page h1 {
+  font-size: 26px;
+}
+.password-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}

@@ -4,7 +4,9 @@ export * from '../../../shared/notifications'
 
 /** 分页读取当前账号仍有权查看的消息，内容不包含预约个人资料。 */
 export function noticePage(page: number, unreadOnly: boolean) {
-  return request<Page<Notice>>('/notifications?page=' + page + '&pageSize=10&unreadOnly=' + unreadOnly)
+  return request<Page<Notice>>(
+    '/notifications?page=' + page + '&pageSize=10&unreadOnly=' + unreadOnly,
+  )
 }
 
 /** 未读数量由服务端按当前授权范围计算，不沿用撤销前的计数。 */

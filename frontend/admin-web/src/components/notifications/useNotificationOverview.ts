@@ -15,7 +15,17 @@ export function useNotificationOverview() {
     else overview.clear()
   }
 
-  watch(() => [route.path, session.account?.id, session.account?.role, session.account?.communityId, session.account?.passwordChangeRequired], () => void overview.refresh(), { immediate: true })
+  watch(
+    () => [
+      route.path,
+      session.account?.id,
+      session.account?.role,
+      session.account?.communityId,
+      session.account?.passwordChangeRequired,
+    ],
+    () => void overview.refresh(),
+    { immediate: true },
+  )
   onMounted(() => document.addEventListener('visibilitychange', visibilityChanged))
   onBeforeUnmount(() => {
     document.removeEventListener('visibilitychange', visibilityChanged)

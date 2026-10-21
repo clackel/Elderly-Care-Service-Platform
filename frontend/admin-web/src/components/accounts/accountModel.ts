@@ -1,4 +1,9 @@
-import type { AccountMutation, AccountStatus, AdminAccount, AdminRole } from '../../api/adminAccounts'
+import type {
+  AccountMutation,
+  AccountStatus,
+  AdminAccount,
+  AdminRole,
+} from '../../api/adminAccounts'
 
 export const adminRoleLabels: Record<AdminRole, string> = {
   COMMUNITY_OPERATOR: '社区运营',
@@ -44,7 +49,8 @@ export function validateAccountDraft(draft: AccountDraft, mode: EditorMode): Acc
     errors.username = '账号需为3至64位字母、数字、点、下划线或连字符，并以字母或数字开头'
   }
   if (mode !== 'reset') {
-    if (!draft.displayName.trim() || draft.displayName.trim().length > 100) errors.displayName = '显示名需为1至100个字符'
+    if (!draft.displayName.trim() || draft.displayName.trim().length > 100)
+      errors.displayName = '显示名需为1至100个字符'
     if (!Object.hasOwn(adminRoleLabels, draft.role)) errors.role = '请选择有效的后台角色'
     if (!['ACTIVE', 'DISABLED'].includes(draft.status)) errors.status = '请选择有效的账号状态'
   }
@@ -63,22 +69,41 @@ export function accountMutation(
   account: AdminAccount | null,
   requestId: string,
 ): AccountMutation {
-  if (mode === 'create') return {
-    kind: 'create', requestId, username: draft.username.trim().toLowerCase(),
-    displayName: draft.displayName.trim(), role: draft.role, password: draft.password,
-  }
+  if (mode === 'create')
+    return {
+      kind: 'create',
+      requestId,
+      username: draft.username.trim().toLowerCase(),
+      displayName: draft.displayName.trim(),
+      role: draft.role,
+      password: draft.password,
+    }
   if (!account) throw new Error('账号信息已失效，请关闭表单后重新选择')
-  if (mode === 'reset') return { kind: 'reset', requestId, id: account.id, version: account.version, password: draft.password }
+  if (mode === 'reset')
+    return {
+      kind: 'reset',
+      requestId,
+      id: account.id,
+      version: account.version,
+      password: draft.password,
+    }
   return {
-    kind: 'update', requestId, id: account.id, version: account.version,
-    displayName: draft.displayName.trim(), role: draft.role, status: draft.status,
+    kind: 'update',
+    requestId,
+    id: account.id,
+    version: account.version,
+    displayName: draft.displayName.trim(),
+    role: draft.role,
+    status: draft.status,
   }
 }
 
 /** 判断本次状态或角色修改是否撤销社区运营人员的健康协助授权。 */
 export function revokesHealthGrants(account: AdminAccount | null, draft: AccountDraft): boolean {
-  return account?.role === 'COMMUNITY_OPERATOR' &&
+  return (
+    account?.role === 'COMMUNITY_OPERATOR' &&
     (draft.role !== 'COMMUNITY_OPERATOR' || draft.status !== 'ACTIVE')
+  )
 }
 
 /** 判断已发出的写入是否可能完成，以决定是否锁定载荷等待原请求重试。 */

@@ -55,7 +55,9 @@ onBeforeRouteLeave(
       >
     </header>
     <div v-if="records.error" class="booking-error" role="alert">{{ records.error }}</div>
-    <p v-if="records.detailLoading" class="booking-muted" role="status">正在读取预约详情与当前处理权限…</p>
+    <p v-if="records.detailLoading" class="booking-muted" role="status">
+      正在读取预约详情与当前处理权限…
+    </p>
     <BookingEditor
       v-if="records.creating"
       :services="records.services"
