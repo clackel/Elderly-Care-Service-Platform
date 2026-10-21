@@ -21,7 +21,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = {
         "app.notification.enabled=false",
-        "spring.datasource.url=jdbc:h2:mem:identity;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
+        "spring.datasource.url=${IDENTITY_TEST_DB_URL:jdbc:h2:mem:identity;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1}",
+        "spring.datasource.username=${IDENTITY_TEST_DB_USERNAME:sa}",
+        "spring.datasource.password=${IDENTITY_TEST_DB_PASSWORD:}",
+        "spring.datasource.driver-class-name=${IDENTITY_TEST_DB_DRIVER:org.h2.Driver}",
         "app.dev-password=Integration-Only-2026"
 })
 @ActiveProfiles("dev")
